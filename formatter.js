@@ -24,12 +24,12 @@ export function formattedList(places){
     const toVisit = places.filter(place => place.TYPE === "visitare")
     if(toEat.length > 0){
         res += "<b>🍴 Dove mangiare</b>\n\n"
-        toEat.forEach(place => res += formatVisitedPlace(place))
+        toEat.forEach(place => res += place.VISITED!= null ? formatVisitedPlace(place) : formatPlaceToVisit(place))
     }
     res+= "\n"
     if(toVisit.length > 0){
         res += "<b>👀 Cose da vedere</b>\n\n"
-        toVisit.forEach(place => res += formatPlaceToVisit(place))
+        toVisit.forEach(place => res += place.VISITED!= null ? formatVisitedPlace(place) : formatPlaceToVisit(place))
     }
     return res
 }
