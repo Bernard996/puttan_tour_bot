@@ -133,13 +133,31 @@ function main() {
 					reply_markup: calendar
 				})
 			}
+			else if (message === "Oggi") {
+				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
+				if(places && places.length > 0){
+					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
+					await dao.setPlaceVisited(place.ID, dayjs().format("DD/MM/YYYY"))
+					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayjs().format("DD/MM/YYYY")}`, {
+						reply_markup: {
+							remove_keyboard: true,
+							selective: true
+						}
+					})
+				}
+			}
 			else if (checkCorrectDayNum(message, monthNumbers[userId])) {
 				dayNumbers[userId] = message
 				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
 				if(places && places.length > 0){
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
 					await dao.setPlaceVisited(place.ID, `${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
-					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
+					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`, {
+						reply_markup: {
+							remove_keyboard: true,
+							selective: true
+						}
+					})
 				}
 			}
 			else if (checkCorrectMonthName(message)) {
@@ -363,6 +381,7 @@ export function getCalendarKeyboard(monthNum) {
 	// calendar.row("Cambia mese")
 	// calendar.row("Cambia mese", "Anni")
 	// calendar.row(dayjs().year().toString())
+	calendar.row("Oggi")
 	calendar.row("⬅️", monthName, "➡️")
 	for (let i of Array(days).keys()) {
 		if (i % 7 === 0) {

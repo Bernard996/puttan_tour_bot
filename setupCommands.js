@@ -88,8 +88,7 @@ export function setupCommands(bot) {
       initStatus(ctx.from.id, "setVisited")
       let placesKeyboard = new Keyboard()
       places.forEach(p => {
-        placesKeyboard.row()
-        placesKeyboard.add(p.NAME)
+        placesKeyboard.row(p.NAME)
       })
       placesKeyboard.oneTime()
       placesKeyboard.resize_keyboard = true
