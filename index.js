@@ -185,7 +185,8 @@ export function initNewPlace(userId, chatId){
     userId: userId,
     chatId: chatId,
     name: "",
-    url: ""
+    url: "",
+    type: ""
   }
 }
 
