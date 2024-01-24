@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dayjs": "^1.11.10",
     "grammy": "^1.20.3",
     "sqlite3": "^5.1.7"
   },
