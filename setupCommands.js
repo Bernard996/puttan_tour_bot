@@ -1,13 +1,10 @@
 import {
   btnMsgs,
   changeStatus,
-  getCalendarKeyboard,
   initStatus,
-  monthNumbers,
   initNewPlace
 } from "./index.js";
 import { Keyboard } from "grammy";
-import dayjs from "dayjs";
 import { formattedList } from "./formatter.js";
 import dao from "./db/dao.mjs";
 
@@ -17,7 +14,8 @@ export function setupCommands(bot) {
     faq: "faq",
     insert: "insert",
     list: "list",
-    set_visited: "set_visited"
+    set_visited: "set_visited",
+    rate: "rate"
   };
 
   const cmdDesc = {
@@ -25,7 +23,8 @@ export function setupCommands(bot) {
     faq: "Faq-ami tutta",
     insert: "Oh sì, mettilo dentro",
     list: "Body count",
-    set_visited: "Qui ho già una clientela"
+    set_visited: "Qui ho già una clientela",
+    rate: "Quanto sono stata brava?"
   };
 
   //start
@@ -94,6 +93,30 @@ export function setupCommands(bot) {
       placesKeyboard.resize_keyboard = true
       placesKeyboard.selective = true
       await ctx.reply(`@${ctx.from.username} Scegli il posto`, {
+        reply_markup: {
+          ...placesKeyboard,
+          force_reply: true
+        }
+      })
+    }
+    else {
+      await ctx.reply(`@${ctx.from.username} Non ci sono posti da visitare!`)
+      changeStatus(ctx.from.id, "start")
+    }
+  })
+
+  bot.command(cmd.rate, async (ctx) => {
+    let places = await dao.getPlaces(ctx.chat.id.toString(), null, true)
+    if(places && places.length > 0){
+      initStatus(ctx.from.id, "rate")
+      let placesKeyboard = new Keyboard()
+      places.forEach(p => {
+        placesKeyboard.row(p.NAME)
+      })
+      placesKeyboard.oneTime()
+      placesKeyboard.resize_keyboard = true
+      placesKeyboard.selective = true
+      await ctx.reply(`@${ctx.from.username} Scegli il posto da votare`, {
         reply_markup: {
           ...placesKeyboard,
           force_reply: true

@@ -81,8 +81,8 @@ function main() {
 		//handle name insert
 		else if (usersStatus[userId]["selectFood"] || usersStatus[userId]["selectVisit"]) {
 			let key = new InlineKeyboard()
-			key.text("Sì", "s")
-			key.text("No", "n")
+			key.text("Sì", "urlS")
+			key.text("No", "urlN")
 			usersNewPlace[userId]["name"] = message
 			changeStatus(userId, "askUrl")
 			await ctx.reply(`@${username} Vuoi inserire un URL per il posto?`, {
@@ -135,9 +135,10 @@ function main() {
 			}
 			else if (message === "Oggi") {
 				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
-				if(places && places.length > 0){
+				if (places && places.length > 0) {
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
 					await dao.setPlaceVisited(place.ID, dayjs().format("DD/MM/YYYY"))
+					delete usersPlaceToEdit[userId]
 					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayjs().format("DD/MM/YYYY")}`, {
 						reply_markup: {
 							remove_keyboard: true,
@@ -149,9 +150,10 @@ function main() {
 			else if (checkCorrectDayNum(message, monthNumbers[userId])) {
 				dayNumbers[userId] = message
 				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
-				if(places && places.length > 0){
+				if (places && places.length > 0) {
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
 					await dao.setPlaceVisited(place.ID, `${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
+					delete usersPlaceToEdit[userId]
 					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`, {
 						reply_markup: {
 							remove_keyboard: true,
@@ -186,9 +188,9 @@ function main() {
 		else if (usersStatus[userId]["setVisited"]) {
 			let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
 			let placesNames
-			if(places && places.length > 0){
+			if (places && places.length > 0) {
 				placesNames = places.map((place) => place.NAME)
-				if(placesNames.includes(message)){
+				if (placesNames.includes(message)) {
 					usersPlaceToEdit[userId] = places.find((place) => place.NAME === message)
 					console.log(usersPlaceToEdit[userId])
 					if (monthNumbers[userId] === undefined) {
@@ -202,13 +204,61 @@ function main() {
 				}
 			}
 		}
+
+		//handle place rating selection
+		else if (usersStatus[userId]["rate"]) {
+			let places = await dao.getPlaces(ctx.chat.id.toString(), null, true)
+			let placesNames
+			if (places && places.length > 0) {
+				placesNames = places.map((place) => place.NAME)
+				if (placesNames.includes(message)) {
+					usersPlaceToEdit[userId] = places.find((place) => place.NAME === message)
+					let rateKeyboard = new Keyboard()
+					rateKeyboard.row("⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐")
+					rateKeyboard.oneTime()
+					rateKeyboard.resize_keyboard = true
+					rateKeyboard.selective = true
+					await ctx.reply(`@${username} Inserisci il voto da 1 a 5`, {
+						reply_markup: rateKeyboard
+					})
+					changeStatus(userId, "applyRate")
+				}
+			}
+		}
+
+		//handle apply rating
+		else if (usersStatus[userId]["applyRate"]) {
+			let regex = RegExp("⭐{1,5}")
+			if(regex.test(message) && message.length <= 5){
+				usersPlaceToEdit[userId].RATING = message.length
+				let inlineKeyboard = new InlineKeyboard()
+				inlineKeyboard.text("Sì", "commentS")
+				inlineKeyboard.text("No", "commentN")
+				await ctx.reply(`@${username} Vuoi inserire un commento`, {
+					reply_markup: {
+						...inlineKeyboard,
+						selective: true
+					}
+				})
+			}
+		}
+
+		//handle comments insertion
+		else if (usersStatus[userId]["setComment"]) {
+			await dao.insertRating(usersPlaceToEdit[userId].ID, userId, usersPlaceToEdit[userId].RATING, message)
+			changeStatus(userId, "start")
+			await ctx.reply(`@${username} Hai votato correttamente il posto!`, {
+				keyboard: {remove_keyboard: true, selective: true}
+			})
+		}
+
 	});
 
 	bot.callbackQuery("skip", async (ctx) => {
 		await ctx.reply("skip")
 	})
 
-	bot.callbackQuery("s", async (ctx) => {
+	bot.callbackQuery("urlS", async (ctx) => {
 		changeStatus(ctx.from.id, "selectUrl")
 		await ctx.reply(`@${ctx.from.username} Inserisci l'URL del posto`, {
 			reply_markup: {
@@ -216,13 +266,33 @@ function main() {
 			}
 		})
 	})
-
-	bot.callbackQuery("n", async (ctx) => {
+	bot.callbackQuery("urlN", async (ctx) => {
 		await insertPlace(usersNewPlace[ctx.from.id], ctx)
+	})
+
+	bot.callbackQuery("commentS", async (ctx) => {
+		changeStatus(ctx.from.id, "setComment")
+		await ctx.reply(`@${ctx.from.username} Inserisci il commento`, {
+			reply_markup: {
+				force_reply: true,
+				selective: true
+			}
+		})
+	})
+	bot.callbackQuery("commentN", async (ctx) => {
+		await dao.insertRating(usersPlaceToEdit[ctx.from.id].ID, ctx.from.id, usersPlaceToEdit[ctx.from.id].RATING, "")
+		changeStatus(ctx.from.id, "start")
+		await ctx.reply(`@${ctx.from.username} Hai votato correttamente il posto!`, {
+			keyboard: {remove_keyboard: true, selective: true}
+		})
 	})
 
 	//Start the Bot
 	bot.start();
+
+	bot.catch((err) => {
+		console.log("Ooops", err);
+	})
 }
 
 function getMonthsKeyboard() {
@@ -236,7 +306,6 @@ function getMonthsKeyboard() {
 	return monthKeyboard
 }
 
-
 export function initStatus(id, status) {
 	usersStatus[id.toString()] = {
 		start: false,
@@ -249,6 +318,9 @@ export function initStatus(id, status) {
 		askUrl: false,
 		selectUrl: false,
 		setVisited: false,
+		rate: false,
+		applyRate: false,
+		setComment: false
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;
@@ -396,7 +468,7 @@ export function getCalendarKeyboard(monthNum) {
 
 async function insertPlace(place, ctx) {
 	dao.insertPlace(place.chatId, place.userId, place.name, place.type, place.url)
-		.then(async (id) => {
+		.then(async (_id) => {
 			changeStatus(ctx.from.id, "start")
 			delete usersNewPlace[place.userId.toString()]
 			await ctx.reply("Posto inserito correttamente!", {
