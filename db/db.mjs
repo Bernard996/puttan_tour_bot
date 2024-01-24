@@ -1,25 +1,36 @@
 import sqlite3 from "sqlite3";
 const db = new sqlite3.Database("./db.sqlite");
-db.serialize(() => {
-  db.run(
-    "CREATE TABLE IF NOT EXISTS PLACES ( ID INTEGER PRIMARY KEY AUTOINCREMENT, CHATID INTEGER NOT NULL, USERID TEXT NOT NULL, TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, VISITED TIMESTAMP, RATING FLOAT NOT NULL DEFAULT 0, TYPE VARCHAR NOT NULL, URL TEXT NOT NULL)"
-  );
-  db.run(
-    "CREATE TABLE IF NOT EXISTS RATING ( PLACEID INTEGER NOT NULL,USERID TEXT NOT NULL,RATING FLOAT NOT NULL,COMMENT TEXT, FOREIGN KEY(PLACEID) REFERENCES PLACES(ID)), PRIMARY KEY(PLACEID, USERID))"
-  );
-});
+db.run(`
+  CREATE TABLE IF NOT EXISTS PLACES ( 
+    ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+    CHATID INTEGER NOT NULL, USERID TEXT NOT NULL, 
+    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    NAME VARCHAR NOT NULL, VISITED TIMESTAMP, 
+    RATING FLOAT NOT NULL DEFAULT 0, 
+    TYPE VARCHAR NOT NULL, URL 
+    TEXT NOT NULL
+    )
+`);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS RATING (
+    PLACEID INTEGER NOT NULL,
+    USERID TEXT NOT NULL,
+    RATING FLOAT NOT NULL,
+    COMMENT TEXT,
+    PRIMARY KEY (PLACEID, USERID),
+    FOREIGN KEY (PLACEID) REFERENCES PLACES(ID)
+  )
+`);
 
 function insertPlace(chatId, userId, type, url) {
   return new Promise((resolve, reject) => {
     db.run(
-      "INSERT INTO PLACES (CHATID, USERID, TYPE, URL) VALUES (?, ?, ?, ?)",
+      "INSERT INTO PLACES (CHATID, USERID, NAME, TYPE, URL) VALUES (?, ?, ?, ?, ?)",
       [chatId, userId, type, url],
       (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
+        if (err) reject(err);
+        else resolve();
       }
     );
   });
@@ -27,29 +38,48 @@ function insertPlace(chatId, userId, type, url) {
 
 function insertRating(placeId, userId, rating, comment) {
   return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      let [count, sum] = db.get(
-        "SELECT COUNT(*), SUM(RATING) FROM RATING WHERE PLACEID = ?",
-        [placeId]
-      );
-      let avg = sum / count;
-      db.run("UPDATE PLACES SET RATING = ? WHERE ID = ?", [avg, placeId]);
-      db.run(
-        "INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT) VALUES (?, ?, ?, ?)",
-        [placeId, userId, rating, comment],
-        (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
+    db.get(
+      "SELECT COUNT(*) as count, SUM(RATING) as sum FROM RATING WHERE PLACEID = ?",
+      [placeId],
+      (err, result) => {
+        if (err) {
+          reject(err);
+          return;
         }
-      );
+
+        const count = result.count || 0;
+        const sum = result.sum || 0;
+
+        const avg = (sum + rating) / (count + 1);
+
+        db.run("UPDATE PLACES SET RATING = ? WHERE ID = ?", [avg, placeId]);
+
+        db.run(
+          "INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT) VALUES (?, ?, ?, ?)",
+          [placeId, userId, rating, comment],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      }
+    );
+  });
+}
+
+function getPlaceComments(placeId) {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM RATING WHERE PLACEID = ?", [placeId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
     });
   });
 }
 
-function getAllPlaces(chatId, type = null) {
+// Function to get all places stored in a chat
+// If type is specified, only places of that type are returned
+// If visited is specified, only places with that visited status are returned
+function getPlaces(chatId, type = null, visited = null) {
   return new Promise((resolve, reject) => {
     let query = "SELECT * FROM PLACES WHERE CHATID = ?";
     let params = [chatId];
@@ -59,51 +89,46 @@ function getAllPlaces(chatId, type = null) {
       params.push(type);
     }
 
+    if (visited !== null) {
+      if (visited) query += " AND VISITED IS NOT NULL";
+      else query += " AND VISITED IS NULL";
+    }
+
     db.get(query, params, (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row);
-      }
+      if (err) reject(err);
+      else resolve(row);
     });
   });
 }
 
-function getPlacesToSee(chatId, type = null) {
+function getPlaceInfo(placeId) {
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM PLACES WHERE CHATID = ? AND VISITED IS NULL";
-    let params = [chatId];
-
-    if (type !== null) {
-      query += " AND TYPE=?";
-      params.push(type);
-    }
-
-    db.get(query, params, (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row);
-      }
+    db.get("SELECT * FROM PLACES WHERE ID = ?", [placeId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
     });
   });
 }
 
-function getSeenPlaces(chatId, type = null) {
+// Function to set the visited status of a place to the current timestamp (or a custom one)
+function setPlaceVisited(placeId, timestamp = null) {
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM PLACES WHERE CHATID = ? AND VISITED IS NOT NULL";
-    let params = [chatId];
+    let query;
+    let params;
 
-    if (type !== null) {
-      query += " AND TYPE=?";
-      params.push(type);
+    if (timestamp !== null) {
+      query = "UPDATE PLACES SET VISITED = ? WHERE ID = ?";
+      params = [timestamp, placeId];
+    } else {
+      query = "UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?";
+      params = [placeId];
     }
 
-    db.get(query, params, (err, row) => {
+    db.run(query, params, (err) => {
       if (err) {
         reject(err);
       } else {
-        resolve(row);
+        resolve();
       }
     });
   });
@@ -114,8 +139,9 @@ export default function () {
   return {
     insertPlace,
     insertRating,
-    getAllPlaces,
-    getPlacesToSee,
-    getSeenPlaces,
+    getPlaces,
+    getPlaceInfo,
+    getPlaceComments,
+    setPlaceVisited,
   };
 }
