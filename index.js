@@ -2,6 +2,7 @@ import {Bot, InlineKeyboard, Keyboard} from "grammy";
 import {setupCommands} from "./setupCommands.js";
 import dayjs from "dayjs";
 import dao from "./db/dao.mjs";
+import {formattedList} from "./formatter.js";
 
 ***REMOVED***
 const bot = new Bot(token);
@@ -25,6 +26,7 @@ export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
 export let monthNumbers = {}
 let usersNewPlace = {}
 let usersPlaceToEdit = {}
+let userListParams = {}
 
 function main() {
 
@@ -95,7 +97,6 @@ function main() {
 
 		//handle ask user to insert url
 		else if (usersStatus[userId]["askUrl"]) {}
-
 
 		//handle url insert
 		else if (usersStatus[userId]["selectUrl"]) {
@@ -252,6 +253,57 @@ function main() {
 			})
 		}
 
+		else if (usersStatus[userId]["filterVisited"]){
+			if(message === "Tutti i posti"){
+				userListParams[userId] = {
+					visited: null
+				}
+			}
+			else if(message === "Posti visitati"){
+				userListParams[userId] = {
+					visited: true
+				}
+			}
+			else if(message === "Posti non visitati"){
+				userListParams[userId] = {
+					visited: false
+				}
+			}
+			changeStatus(userId, "filterType")
+			let kb = new Keyboard()
+			kb.add("Tutti i posti")
+			kb.add("Posti da mangiare")
+			kb.add("Posti da visitare")
+			kb.oneTime()
+			kb.resize_keyboard = true
+			kb.selective = true
+			await ctx.reply(`@${username} Scegli il tipo di posto`, {
+				reply_markup: kb
+			})
+		}
+
+		else if (usersStatus[userId]["filterType"]){
+			if(message === "Tutti i posti"){
+				userListParams[userId].type = null
+			}
+			else if(message === "Posti da mangiare"){
+				userListParams[userId].type = "mangiare"
+			}
+			else if(message === "Posti da visitare"){
+				userListParams[userId].type = "visitare"
+			}
+			console.log(userListParams[userId])
+			let places = await dao.getPlaces(ctx.chat.id.toString(), userListParams[userId].type, userListParams[userId].visited)
+			delete userListParams[userId]
+			await ctx.reply(formattedList(places), {
+				parse_mode: "HTML",
+				link_preview_options: {
+					is_disabled: true
+				},
+			});
+			changeStatus(userId, "start")
+		}
+
 	});
 
 	bot.callbackQuery("skip", async (ctx) => {
@@ -320,7 +372,9 @@ export function initStatus(id, status) {
 		setVisited: false,
 		rate: false,
 		applyRate: false,
-		setComment: false
+		setComment: false,
+		filterVisited: false,
+		filterType: false,
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;
