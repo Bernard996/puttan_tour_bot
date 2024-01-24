@@ -21,16 +21,14 @@ export function setupCommands(bot) {
 		if(monthNumbers[userId] === undefined){
 			monthNumbers[userId] = dayjs().month();
 		}
-		let calendar = getCalendarKeyboard(monthNumbers[userId])
 		initStatus(userId);
 		changeStatus(userId,"selectDate")
 		await ctx.reply(
 			"Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!", {
-				// reply_markup: {remove_keyboard: true},
-				reply_markup: calendar
+				reply_markup: {remove_keyboard: true, selective: true},
 			}
 		);
-		// changeStatus(ctx.from.id, "cmd.start);
+		changeStatus(ctx.from.id, "cmd.start");
 	});
 
 	//faq
