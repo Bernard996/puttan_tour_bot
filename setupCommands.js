@@ -10,9 +10,9 @@ export function setupCommands(bot) {
 	};
 
 	const cmdDesc = {
-		start: "Avvia il bot, zoccola",
+		start: "Dammi una botta... di vita",
 		faq: "Faq-ami tutta",
-		insert: "Inserisci un posto",
+		insert: "Oh sì, mettilo dentro",
 	};
 
 	//start
@@ -25,7 +25,7 @@ export function setupCommands(bot) {
 		initStatus(userId);
 		changeStatus(userId,"selectDate")
 		await ctx.reply(
-			"Ciao Zoccola! Questo è il nostro bot per gestire i posti dove andare a troieggiare insieme! Ancora non hai capito come funziona il bot? 😅 Sei proprio una puttana... Lancia il comando /faq per vedere i dettagli sui comandi disponibili e smettila di rompere i coglioni a me!", {
+			"Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!", {
 				// reply_markup: {remove_keyboard: true},
 				reply_markup: calendar
 			}
@@ -48,7 +48,7 @@ export function setupCommands(bot) {
 		keyboard.add(btnMsgs[0], btnMsgs[1]);
 		keyboard.oneTime();
 		keyboard.resize_keyboard = true;
-		await ctx.reply("Scegli il tipo di posto che vuoi inserire", {
+		await ctx.reply("Ok, bene, aspetta che ti applaudo per l'idea.\n\nPerchè me lo stai proponendo?", {
 			reply_markup: keyboard,
 		});
 		changeStatus(ctx.from.id, cmd.insert);
