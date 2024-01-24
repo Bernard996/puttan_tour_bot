@@ -44,11 +44,13 @@ export function setupCommands(bot) {
 
 	//insert
 	bot.command(cmd.insert, async (ctx) => {
+		let username = ctx.from.username;
 		const keyboard = new Keyboard();
 		keyboard.add(btnMsgs[0], btnMsgs[1]);
 		keyboard.oneTime();
 		keyboard.resize_keyboard = true;
-		await ctx.reply("Ok, bene, aspetta che ti applaudo per l'idea.\n\nPerchè me lo stai proponendo?", {
+		keyboard.selective = true
+		await ctx.reply(`Ok, bene, aspetta che ti applaudo per l'idea.\n\nPerchè me lo stai proponendo, @${username}?`, {
 			reply_markup: keyboard,
 		});
 		changeStatus(ctx.from.id, cmd.insert);
