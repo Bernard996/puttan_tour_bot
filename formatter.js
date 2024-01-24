@@ -19,7 +19,7 @@ function formatPlaceToVisit(place) {
 
 export function formattedList(places){
     let res = ""
-    if(!places || places.length === 0) return `Non ci sono posti da visitare 😢\n\n Aggiungi un nuovo posto con /insert`
+    if(!places || places.length === 0) return `Non ci sono posti da visitare 😢\n\nAggiungi un nuovo posto con /insert`
     const toEat = places.filter(place => place.TYPE === "mangiare")
     const toVisit = places.filter(place => place.TYPE === "visitare")
     if(toEat.length > 0){

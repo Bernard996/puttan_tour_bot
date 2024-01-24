@@ -1,10 +1,10 @@
 import sqlite3 from "sqlite3";
-const db = new sqlite3.Database("./db_test.sqlite");
+const db = new sqlite3.Database("./db.sqlite");
 db.run(`
   CREATE TABLE IF NOT EXISTS PLACES ( 
     ID INTEGER PRIMARY KEY AUTOINCREMENT, 
-    CHATID INTEGER NOT NULL, 
-    USERID TEXT NOT NULL, 
+    CHATID VARCHAR NOT NULL, 
+    USERID VARCHAR NOT NULL, 
     TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     NAME VARCHAR NOT NULL, 
     VISITED TIMESTAMP, 
@@ -117,7 +117,7 @@ function getPlaceComments(placeId) {
 /**
  * Retrieves places based on specified criteria.
  *
- * @param {number} chatId - The ID of the chat associated with the places.
+ * @param {string} chatId - The ID of the chat associated with the places.
  * @param {string | null} type - The optional type or category of the places.
  * @param {boolean | null} visited - The optional flag to filter places based on whether they have been visited.
  * @returns {Promise<Object | null>} A promise that resolves with the information of the retrieved place or null if not found.
