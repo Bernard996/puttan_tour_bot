@@ -9,6 +9,7 @@ import {
 import { Keyboard } from "grammy";
 import dayjs from "dayjs";
 import { formattedList } from "./formatter.js";
+import dao from "./db/dao.mjs";
 
 export function setupCommands(bot) {
   const cmd = {
@@ -77,7 +78,7 @@ export function setupCommands(bot) {
         CHATID: 1,
         USERID: "mell0r1ne",
         TIMESTAMP: "2024-01-24 11:52:44",
-        NAME: "giappone",
+        NAME: "Giappone",
         VISITED: null,
         RATING: null,
         TYPE: "visitare",
@@ -106,7 +107,9 @@ export function setupCommands(bot) {
         URL: "http://www.rockburgertorino.it/",
       },
     ];
-    await ctx.reply(formattedList(mockPlaces), {
+    let places = await dao.getPlaces(ctx.chat.id)
+    console.log(places)
+    await ctx.reply(formattedList(places), {
       parse_mode: "HTML",
       link_preview_options: {
         is_disabled: true
