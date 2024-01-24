@@ -2,7 +2,7 @@ function formatVisitedPlace(place) {
     let res = "- "
     if(place.URL) res += `<a href="${place.URL}">${place.NAME} ✅</a>\n`
     else res += `${place.NAME} ✅\n`
-    if(place.RATING) res += `   ⭐️ <i>${place.RATING}</i>\n`
+    if(place.RATING) res += `   ⭐️ <i>${place.RATING.toFixed(1)}</i>\n`
     if(place.VISITED) res += `   🗓 <i>${place.VISITED.split(" ")[0]}</i>\n`
     res += `\n`
     return res
