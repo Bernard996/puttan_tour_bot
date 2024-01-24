@@ -1,4 +1,4 @@
-import {Bot, Keyboard} from "grammy";
+import {Bot, InlineKeyboard, Keyboard} from "grammy";
 import {setupCommands} from "./setupCommands.js";
 import dayjs from "dayjs";
 import dao from "./db/dao.mjs";
@@ -78,13 +78,12 @@ function main() {
 
 		//handle name insert
 		else if (usersStatus[userId]["selectFood"] || usersStatus[userId]["selectVisit"]) {
-			let key = new Keyboard()
+			let key = new InlineKeyboard()
+			key.text("Sì", "s")
+			key.text("No", "n")
 			usersNewPlace[userId]["name"] = message
-			key.selective = true
-			key.resized()
-			key.text("Salta")
-			changeStatus(userId, "selectUrl")
-			await ctx.reply(`@${username} Inserisci l'URL del posto selezionato (opzionale)`, {
+			changeStatus(userId, "askUrl")
+			await ctx.reply(`@${username} Vuoi inserire un URL per il posto?`, {
 				reply_markup: {
 					...key,
 					force_reply: true
@@ -92,11 +91,10 @@ function main() {
 			});
 		}
 
+		else if (usersStatus[userId]["askUrl"]) {}
 
 		else if (usersStatus[userId]["selectUrl"]) {
-			if (message === "Salta") {
-				usersNewPlace[userId]["url"] = message
-			}
+			usersNewPlace[userId]["url"] = message
 			await insertPlace(usersNewPlace[userId], ctx)
 		}
 
@@ -159,6 +157,18 @@ function main() {
 		await ctx.reply("skip")
 	})
 
+	bot.callbackQuery("s", async (ctx) => {
+		changeStatus(ctx.from.id, "selectUrl")
+		await ctx.reply(`@${ctx.from.username} Inserisci l'URL del posto`, {
+			reply_markup: {
+				force_reply: true
+			}
+		})
+	})
+	bot.callbackQuery("n", async (ctx) => {
+		await insertPlace(usersNewPlace[ctx.from.id], ctx)
+	})
+
 	//Start the Bot
 	bot.start();
 }
@@ -187,6 +197,7 @@ export function initStatus(id, status) {
 		selectDate: false,
 		selectMonth: false,
 		selectYear: false,
+		askUrl: false,
 		selectUrl: false
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
@@ -334,16 +345,21 @@ export function getCalendarKeyboard(monthNum) {
 }
 
 async function insertPlace(place, ctx) {
-	dao.insertPlace(place.chatId, place.userId, place.name, place.url, place.type)
-		.then(async (_id) => {
-			await ctx.reply("Posto inserito correttamente!")
-		})
-		.catch(async (err) => {
-			await ctx.reply(`Errore durante l'inserimento del posto: ${err}`)
-		}).finally(() => {
+	dao.insertPlace(place.chatId, place.userId, place.name, place.type, place.url)
+		.then(async (id) => {
 			changeStatus(ctx.from.id, "start")
 			delete usersNewPlace[place.userId.toString()]
-	})
+			await ctx.reply("Posto inserito correttamente!", {
+				reply_markup: {remove_keyboard: true, selective: true}
+			})
+		})
+		.catch(async (err) => {
+			changeStatus(ctx.from.id, "start")
+			delete usersNewPlace[place.userId.toString()]
+			await ctx.reply(`Errore durante l'inserimento del posto: ${err}`, {
+				reply_markup: {remove_keyboard: true, selective: true}
+			})
+		})
 }
 
 main()
