@@ -72,13 +72,25 @@ export function setupCommands(bot) {
 
   //list
   bot.command(cmd.list, async (ctx) => {
-    let places = await dao.getPlaces(ctx.chat.id.toString())
-    await ctx.reply(formattedList(places), {
-      parse_mode: "HTML",
-      link_preview_options: {
-        is_disabled: true
-      },
+    let kb = new Keyboard()
+    kb.add("Tutti i posti")
+    kb.add("Posti visitati")
+    kb.add("Posti non visitati")
+    kb.oneTime()
+    kb.resize_keyboard = true
+    kb.selective = true
+
+    initStatus(ctx.from.id, "filterVisited")
+    await ctx.reply(`@${ctx.from.username} scegli se mostrare tutti i posti, solo quelli visitati o quelli non visitati`, {
+      reply_markup: kb
     });
+    // let places = await dao.getPlaces(ctx.chat.id.toString())
+    // await ctx.reply(formattedList(places), {
+    //   parse_mode: "HTML",
+    //   link_preview_options: {
+    //     is_disabled: true
+    //   },
+    // });
   });
 
   bot.command(cmd.set_visited, async (ctx) => {
