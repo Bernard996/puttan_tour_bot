@@ -23,11 +23,11 @@ db.run(`
   )
 `);
 
-function insertPlace(chatId, userId, type, url) {
+function insertPlace(chatId, userId, name, type, url) {
   return new Promise((resolve, reject) => {
     db.run(
       "INSERT INTO PLACES (CHATID, USERID, NAME, TYPE, URL) VALUES (?, ?, ?, ?, ?)",
-      [chatId, userId, type, url],
+      [chatId, userId, name, type, url],
       (err) => {
         if (err) reject(err);
         else resolve();
