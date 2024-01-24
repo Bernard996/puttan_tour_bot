@@ -46,7 +46,9 @@ export function setupCommands(bot) {
     await ctx.reply(
       `/${cmd.start}: avvia il bot\n` +
         `/${cmd.faq}: mostra questo messaggio\n` +
-        `/${cmd.insert}: inserisci un nuovo posto\n`
+        `/${cmd.insert}: inserisci un nuovo posto\n` +
+        `/${cmd.list}: elenca tutti i posti\n` +
+        `/${cmd.set_visited}: aggiorna un posto come visitato\n`
     );
   });
 
