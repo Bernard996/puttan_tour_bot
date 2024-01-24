@@ -1,4 +1,4 @@
-import {btnMsgs, changeStatus, getCalendarKeyboard, monthNumbers} from "./index.js";
+import {btnMsgs, changeStatus, getCalendarKeyboard, initStatus, monthNumbers, usersStatus} from "./index.js";
 import {Keyboard} from "grammy";
 import dayjs from "dayjs";
 
@@ -22,14 +22,16 @@ export function setupCommands(bot) {
 			monthNumbers[userId] = dayjs().month();
 		}
 		let calendar = getCalendarKeyboard(monthNumbers[userId])
+		initStatus(userId);
+		changeStatus(userId,"selectDate")
+		console.log(usersStatus)
 		await ctx.reply(
 			"Ciao Zoccola! Questo è il nostro bot per gestire i posti dove andare a troieggiare insieme! Ancora non hai capito come funziona il bot? 😅 Sei proprio una puttana... Lancia il comando /faq per vedere i dettagli sui comandi disponibili e smettila di rompere i coglioni a me!", {
 				// reply_markup: {remove_keyboard: true},
 				reply_markup: calendar
 			}
 		);
-		// changeStatus(cmd.start);
-		changeStatus("selectDate")
+		// changeStatus(ctx.from.id, "cmd.start);
 	});
 
 	//faq
@@ -50,7 +52,7 @@ export function setupCommands(bot) {
 		await ctx.reply("Scegli il tipo di posto che vuoi inserire", {
 			reply_markup: keyboard,
 		});
-		changeStatus(cmd.insert);
+		changeStatus(ctx.from.id, cmd.insert);
 	});
 
 	//menu creation

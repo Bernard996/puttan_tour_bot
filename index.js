@@ -7,12 +7,16 @@ const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
 const days_30 = [3, 5, 8, 10]
 const days_28 = [1]
-export const status = {
-	start: true,
-	insert: false,
-	selectFood: false,
-	selectVisit: false,
-	selectDate: false,
+export const usersStatus = {
+	// "-1": {
+	// 	start: true,
+	// 	insert: false,
+	// 	selectFood: false,
+	// 	selectVisit: false,
+	// 	selectDate: false,
+	// 	selectMonth: false,
+	// 	selectYear: false,
+	// }
 };
 
 export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
@@ -21,22 +25,24 @@ export let monthNumbers = {}
 function main() {
 
 	let calendar = new Keyboard()
-	const now = dayjs()
-	let monthNum = now.month();
 	let dayNumbers = {};
 	setupCommands(bot);
 
 
 	bot.on("message", async (ctx) => {
+		if (usersStatus[ctx.from.id] === undefined) {
+			initStatus(ctx.from.id)
+		}
 		//handle start status
-		if (status.start) {
+		if (usersStatus[ctx.from.id]["start"]) {
 			await ctx.reply("Dammi un comando, sono la tua schiava!", {
 				reply_markup: {remove_keyboard: true}
 			});
-			changeStatus("start");
+			changeStatus(ctx.from.id, "start");
 		}
+
 		//handle insert status, showing the keyboard
-		else if (status.insert) {
+		else if (usersStatus[ctx.from.id]["insert"]) {
 			//error message with wrong strings
 			if (ctx.message.text !== btnMsgs[0] && ctx.message.text !== btnMsgs[1]) {
 				await ctx.reply(
@@ -49,29 +55,30 @@ function main() {
 					await ctx.reply("Inserisci il nome del posto dove mangiare", {
 						reply_markup: {remove_keyboard: true}
 					});
-					changeStatus("selectFood");
+					changeStatus(ctx.from.id, "selectFood");
 				} else if (ctx.message.text === btnMsgs[1]) {
 					await ctx.reply("Inserisci il nome del posto da visitare", {
 						reply_markup: {remove_keyboard: true}
 					});
-					changeStatus("selectVisit");
+					changeStatus(ctx.from.id, "selectVisit");
 				}
 			}
 		}
+
 		//handle url insert
-		else if (status.selectFood || status.selectVisit) {
+		else if (usersStatus[ctx.from.id]["selectFood"] || usersStatus[ctx.from.id]["selectVisit"]) {
 			await ctx.reply("Inserisci l'URL del posto selezionato (opzionale)");
 		}
 
 		//handle select date
-		else if (status.selectDate) {
-			if(ctx.message.text === "⬅️"){
+		else if (usersStatus[ctx.from.id]["selectDate"]) {
+			if (ctx.message.text === "⬅️") {
 				let id = ctx.from.id
-				if(monthNumbers[id] === undefined){
+				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
 				}
 				monthNumbers[id] -= 1
-				if(monthNumbers[id] < 0){
+				if (monthNumbers[id] < 0) {
 					monthNumbers[id] = 11
 				}
 				let monthName = getMonthName(monthNumbers[id])
@@ -79,14 +86,13 @@ function main() {
 				await ctx.reply(monthName, {
 					reply_markup: calendar
 				})
-			}
-			else if(ctx.message.text === "➡️"){
+			} else if (ctx.message.text === "➡️") {
 				let id = ctx.from.id
-				if(monthNumbers[id] === undefined){
+				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
 				}
 				monthNumbers[id] += 1
-				if(monthNumbers[id] > 11){
+				if (monthNumbers[id] > 11) {
 					monthNumbers[id] = 0
 				}
 				let monthName = getMonthName(monthNumbers[id])
@@ -95,15 +101,40 @@ function main() {
 					reply_markup: calendar
 				})
 			}
-			else if(checkCorrectDayNum(ctx.message.text, monthNumbers[ctx.from.id])){
-				dayNumbers[ctx.from.id] = ctx.message.text
-				await ctx.reply(`${dayNumbers[ctx.from.id]}/${monthNumbers[ctx.from.id]+1}/${dayjs().year()} è la data che hai scelto!`)
-			}
-			else if(checkCorrectMonthName(ctx.message.text)){
+			else if (checkCorrectMonthName(ctx.message.text)) {
 				switchMonth(getMonthNum(ctx.message.text), ctx.from.id)
 			}
+			else if (checkCorrectDayNum(ctx.message.text, monthNumbers[ctx.from.id])) {
+				dayNumbers[ctx.from.id] = ctx.message.text
+				await ctx.reply(`${dayNumbers[ctx.from.id]}/${monthNumbers[ctx.from.id] + 1}/${dayjs().year()} è la data che hai scelto!`)
+			}
+			else if (ctx.message.text === "Cambia mese") {
+				calendar = getMonthsKeyboard()
+				await ctx.reply("Scegli il mese", {
+					reply_markup: calendar
+				})
+				changeStatus(ctx.from.id,"selectMonth")
+			}
+			// else if (ctx.message.text === "Anni") {
+			// 	// calendar = getYearsKeyboard()
+			// 	await ctx.reply("Scegli l'anno", {
+			// 		reply_markup: calendar
+			// 	})
+			// 	changeStatus(ctx.from.id,"selectYear")
+			// }
 			else {
 				await ctx.reply("Inserisci una data corretta!")
+			}
+		}
+
+		// handle month selection
+		else if (usersStatus[ctx.from.id]["selectMonth"]) {
+			if (checkCorrectMonthName(ctx.message.text)) {
+				switchMonth(getMonthNum(ctx.message.text), ctx.from.id)
+				changeStatus(ctx.from.id,"selectDate")
+			}
+			else {
+				await ctx.reply("Inserisci un mese corretto!")
 			}
 		}
 	});
@@ -112,15 +143,39 @@ function main() {
 	bot.start();
 }
 
+function getMonthsKeyboard(){
+	let monthKeyboard = new Keyboard()
+	monthKeyboard.row("Gennaio","Febbraio","Marzo")
+	monthKeyboard.row("Aprile","Maggio","Giugno")
+	monthKeyboard.row("Luglio","Agosto","Settembre")
+	monthKeyboard.row("Ottobre","Novembre","Dicembre")
+	monthKeyboard.resized()
+	return monthKeyboard
+}
+// function getYearsKeyboard(){
+//
+// }
 
-export function changeStatus(cmd) {
-	Object.entries(status).forEach(([key, _value]) => {
-		status[key] = key === cmd;
-	});
-	console.log(status);
+export function initStatus(id) {
+	usersStatus[id.toString()] = {
+		start: true,
+		insert: false,
+		selectFood: false,
+		selectVisit: false,
+		selectDate: false,
+		selectMonth: false,
+		selectYear: false,
+	}
 }
 
-function switchMonth(monthNum, id){
+export function changeStatus(id, cmd) {
+	Object.entries(usersStatus[id]).forEach(([key, _value]) => {
+		usersStatus[id][key] = key === cmd;
+	});
+	console.log(usersStatus);
+}
+
+function switchMonth(monthNum, id) {
 	let monthName = getMonthName(monthNum)
 	monthNumbers[id] = monthNum
 	let calendar = getCalendarKeyboard(monthNum)
@@ -188,55 +243,52 @@ function getMonthNum(monthName) {
 	}
 }
 
-function checkCorrectMonthName(month){
+function checkCorrectMonthName(month) {
 	let months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio",
 		"Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 	return months.includes(month)
 }
 
-function checkCorrectDayNum(dayNum, monthNum){
+function checkCorrectDayNum(dayNum, monthNum) {
 	let days = 0
-	if(days_31.includes(monthNum)){
+	if (days_31.includes(monthNum)) {
 		days = 31
-	}
-	else if(days_30.includes(monthNum)){
+	} else if (days_30.includes(monthNum)) {
 		days = 30
-	}
-	else if(days_28.includes(monthNum)){
+	} else if (days_28.includes(monthNum)) {
 		days = 28
 	}
-	if(dayNum.match(/^\d+$/)){
+	if (dayNum.match(/^\d+$/)) {
 		dayNum = parseInt(dayNum)
-		if(dayNum > 0 && dayNum <= days){
+		if (dayNum > 0 && dayNum <= days) {
 			return true
 		}
-	}
-	else {
+	} else {
 		return false
 	}
 }
 
-export function getCalendarKeyboard(monthNum){
+export function getCalendarKeyboard(monthNum) {
 	let monthName = getMonthName(monthNum)
 	let days = 0
 
-	if(days_31.includes(monthNum)){
+	if (days_31.includes(monthNum)) {
 		days = 31
-	}
-	else if(days_30.includes(monthNum)){
+	} else if (days_30.includes(monthNum)) {
 		days = 30
-	}
-	else if(days_28.includes(monthNum)){
+	} else if (days_28.includes(monthNum)) {
 		days = 28
 	}
 	let calendar = new Keyboard()
-	calendar.row("Mesi", "Anni")
-	calendar.row("⬅️", monthName, dayjs().year().toString(), "➡️")
-	for(let i of Array(days).keys()){
-		if(i % 7 === 0){
+	calendar.row("Cambia mese")
+	// calendar.row("Cambia mese", "Anni")
+	// calendar.row(dayjs().year().toString())
+	calendar.row("⬅️", monthName, "➡️")
+	for (let i of Array(days).keys()) {
+		if (i % 7 === 0) {
 			calendar.row()
 		}
-		calendar.text((i+1).toString())
+		calendar.text((i + 1).toString())
 	}
 	calendar.resized()
 	return calendar
