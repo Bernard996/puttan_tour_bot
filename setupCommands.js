@@ -72,41 +72,6 @@ export function setupCommands(bot) {
 
   //list
   bot.command(cmd.list, async (ctx) => {
-    let mockPlaces = [
-      {
-        ID: 2,
-        CHATID: 1,
-        USERID: "mell0r1ne",
-        TIMESTAMP: "2024-01-24 11:52:44",
-        NAME: "Giappone",
-        VISITED: null,
-        RATING: null,
-        TYPE: "visitare",
-        URL: null,
-      },
-      {
-        ID: 3,
-        CHATID: 1,
-        USERID: "mell0r1ne",
-        TIMESTAMP: "2024-01-24 11:54:03",
-        NAME: "Rock Burger",
-        VISITED: "2024-01-24 12:04:39",
-        RATING: 3.4,
-        TYPE: "mangiare",
-        URL: "http://www.rockburgertorino.it/",
-      },
-      {
-        ID: 3,
-        CHATID: 1,
-        USERID: "mell0r1ne",
-        TIMESTAMP: "2024-01-24 11:54:03",
-        NAME: "La prosciutteria",
-        VISITED: null,
-        RATING: null,
-        TYPE: "mangiare",
-        URL: "http://www.rockburgertorino.it/",
-      },
-    ];
     let places = await dao.getPlaces(ctx.chat.id)
     console.log(places)
     await ctx.reply(formattedList(places), {
