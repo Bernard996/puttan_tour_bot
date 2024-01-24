@@ -31,7 +31,7 @@ switch (functionName) {
 
   case "insertRating":
     dao
-      .insertRating(idTest, "test", 0, "testcomment")
+      .insertRating(idTest, "testname", 3, "testcommenthihihi")
       .then(() => console.log("Funzione insertRating eseguita con successo."))
       .catch((error) =>
         console.error("Errore durante l'esecuzione di insertRating:", error)

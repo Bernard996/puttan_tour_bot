@@ -66,37 +66,48 @@ function insertPlace(chatId, userId, name, type, url) {
  * @returns {Promise<void>} A promise that resolves when the rating is successfully inserted.
  * @throws {Error} Thrown if there are errors during the database operations.
  */
-
 function insertRating(placeId, userId, rating, comment) {
   return new Promise((resolve, reject) => {
-    db.get(
-      "SELECT COUNT(*) as count, SUM(RATING) as sum FROM RATING WHERE PLACEID = ?",
-      [placeId],
-      (err, result) => {
+    db.run(
+      "INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT) VALUES (?, ?, ?, ?) " +
+      "ON CONFLICT(PLACEID, USERID) " +
+      "DO UPDATE SET RATING = ?, COMMENT = ?",
+      [placeId, userId, rating, comment, rating, comment],
+      (err) => {
         if (err) {
           reject(err);
           return;
         }
 
-        const count = result.count || 0;
-        const sum = result.sum || 0;
+        // Aggiorna la tabella PLACES con la nuova media del rating
+        db.get(
+          "SELECT COUNT(*) as count, SUM(RATING) as sum FROM RATING WHERE PLACEID = ?",
+          [placeId],
+          (err, result) => {
+            if (err) {
+              reject(err);
+              return;
+            }
 
-        const avg = (sum + rating) / (count + 1);
+            const count = result.count || 0;
+            const sum = result.sum || 0;
+            const avg = (sum + rating) / (count + 1);
 
-        db.run("UPDATE PLACES SET RATING = ? WHERE ID = ?", [avg, placeId]);
-
-        db.run(
-          "INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT) VALUES (?, ?, ?, ?)",
-          [placeId, userId, rating, comment],
-          (err) => {
-            if (err) reject(err);
-            else resolve();
+            db.run("UPDATE PLACES SET RATING = ? WHERE ID = ?", [avg, placeId], (err) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve();
+            });
           }
         );
       }
     );
   });
 }
+
+
 
 /**
  * Retrieves comments associated with a specific place.
@@ -195,6 +206,28 @@ function setPlaceVisited(placeId, timestamp = null) {
   });
 }
 
+/**
+ * 
+ * @param {number} placeId - The ID of the place to be deleted. 
+ * @returns {Promise<void>} - A promise that resolves when the place is successfully deleted.
+ * @throws {Error} Thrown if there are errors during the database operations.
+ */
+
+function deletePlace(placeId) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run("DELETE FROM PLACES WHERE ID = ?", [placeId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+      db.run("DELETE FROM RATING WHERE PLACEID = ?", [placeId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    })
+  });
+}
+
 const dao = {
   insertPlace,
   insertRating,
@@ -202,5 +235,6 @@ const dao = {
   getPlaceInfo,
   getPlaceComments,
   setPlaceVisited,
+  deletePlace
 };
 export default dao;
