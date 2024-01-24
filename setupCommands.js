@@ -21,14 +21,13 @@ export function setupCommands(bot) {
 		if(monthNumbers[userId] === undefined){
 			monthNumbers[userId] = dayjs().month();
 		}
-		initStatus(userId);
-		changeStatus(userId,"selectDate")
+		initStatus(userId, 'start');
 		await ctx.reply(
 			"Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!", {
 				reply_markup: {remove_keyboard: true, selective: true},
 			}
 		);
-		changeStatus(ctx.from.id, "cmd.start");
+		changeStatus(ctx.from.id, "start");
 	});
 
 	//faq
@@ -42,6 +41,7 @@ export function setupCommands(bot) {
 
 	//insert
 	bot.command(cmd.insert, async (ctx) => {
+		initStatus(ctx.from.id, 'insert')
 		let username = ctx.from.username;
 		const keyboard = new Keyboard();
 		keyboard.add(btnMsgs[0], btnMsgs[1]);
@@ -49,7 +49,7 @@ export function setupCommands(bot) {
 		keyboard.resize_keyboard = true;
 		keyboard.selective = true
 		await ctx.reply(`Ok, bene, aspetta che ti applaudo per l'idea.\n\nPerchè me lo stai proponendo, @${username}?`, {
-			reply_markup: keyboard,
+			reply_markup: {...keyboard, force_reply: true},
 		});
 		changeStatus(ctx.from.id, cmd.insert);
 	});
