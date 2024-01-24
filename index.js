@@ -1,4 +1,4 @@
-import {Bot, Keyboard} from "grammy";
+import {Bot, InlineKeyboard, Keyboard} from "grammy";
 import {setupCommands} from "./setupCommands.js";
 import dayjs from "dayjs";
 
@@ -28,22 +28,22 @@ function main() {
 	let dayNumbers = {};
 	setupCommands(bot);
 
-
 	bot.on("message", async (ctx) => {
 
 		let username = ctx.from.username
+		let userId = ctx.from.id
 
-		if (usersStatus[ctx.from.id] === undefined) {
-			initStatus(ctx.from.id)
+		if (usersStatus[userId] === undefined) {
+			initStatus(userId, 'start')
 		}
 		//handle start status
-		if (usersStatus[ctx.from.id]["start"]) {
+		if (usersStatus[userId]["start"]) {
 			await ctx.reply(`Dammi un comando @${username}, sono la tua schiava!`, {
 				reply_markup: {remove_keyboard: true, selective: true}
 			});
 		}
 		//handle insert status, showing the keyboard
-		else if (usersStatus[ctx.from.id]["insert"]) {
+		else if (usersStatus[userId]["insert"]) {
 			//error message with wrong strings
 			if (ctx.message.text !== btnMsgs[0] && ctx.message.text !== btnMsgs[1]) {
 				await ctx.reply(
@@ -54,27 +54,42 @@ function main() {
 			else {
 				if (ctx.message.text === btnMsgs[0]) {
 					await ctx.reply(`@${username} inserisci il nome del posto dove mangiare`, {
-						reply_markup: {remove_keyboard: true, selective: true}
+						reply_markup: {
+							selective: true,
+							force_reply: true
+						},
 					});
-					changeStatus(ctx.from.id, "selectFood");
+					changeStatus(userId, "selectFood");
 				} else if (ctx.message.text === btnMsgs[1]) {
 					await ctx.reply(`@${username} inserisci il nome del posto da visitare`, {
-						reply_markup: {remove_keyboard: true, selective: true}
+						reply_markup: {
+							selective: true,
+							force_reply: true
+						}
 					});
-					changeStatus(ctx.from.id, "selectVisit");
+					changeStatus(userId, "selectVisit");
 				}
 			}
 		}
 
 		//handle url insert
-		else if (usersStatus[ctx.from.id]["selectFood"] || usersStatus[ctx.from.id]["selectVisit"]) {
-			await ctx.reply(`@${username} Inserisci l'URL del posto selezionato (opzionale)`);
+		else if (usersStatus[userId]["selectFood"] || usersStatus[userId]["selectVisit"]) {
+			let key = new Keyboard()
+			key.selective = true
+			key.resized()
+			key.text("Salta")
+			await ctx.reply(`@${username} Inserisci l'URL del posto selezionato (opzionale)`, {
+				reply_markup: {
+					...key,
+					force_reply: true
+				},
+			});
 		}
 
 		//handle select date
-		else if (usersStatus[ctx.from.id]["selectDate"]) {
+		else if (usersStatus[userId]["selectDate"]) {
 			if (ctx.message.text === "⬅️") {
-				let id = ctx.from.id
+				let id = userId
 				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
 				}
@@ -87,9 +102,8 @@ function main() {
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			}
-			else if (ctx.message.text === "➡️") {
-				let id = ctx.from.id
+			} else if (ctx.message.text === "➡️") {
+				let id = userId
 				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
 				}
@@ -102,63 +116,57 @@ function main() {
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			}
-			else if (checkCorrectDayNum(ctx.message.text, monthNumbers[ctx.from.id])) {
-				dayNumbers[ctx.from.id] = ctx.message.text
-				await ctx.reply(`${dayNumbers[ctx.from.id]}/${monthNumbers[ctx.from.id] + 1}/${dayjs().year()} è la data che hai scelto!`)
-			}
-			else if (checkCorrectMonthName(ctx.message.text)) {
+			} else if (checkCorrectDayNum(ctx.message.text, monthNumbers[userId])) {
+				dayNumbers[userId] = ctx.message.text
+				await ctx.reply(`${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()} è la data che hai scelto!`)
+			} else if (checkCorrectMonthName(ctx.message.text)) {
 				calendar = getMonthsKeyboard()
 				await ctx.reply(`@${username} Scegli il mese`, {
 					reply_markup: calendar
 				})
-				changeStatus(ctx.from.id,"selectMonth")
-			}
-			// else if (ctx.message.text === "Anni") {
-			// 	// calendar = getYearsKeyboard()
-			// 	await ctx.reply("Scegli l'anno", {
-			// 		reply_markup: calendar
-			// 	})
-			// 	changeStatus(ctx.from.id,"selectYear")
-			// }
-			else {
+				changeStatus(userId, "selectMonth")
+			} else {
 				await ctx.reply("Inserisci una data corretta!")
 			}
 		}
 
 		// handle month selection
-		else if (usersStatus[ctx.from.id]["selectMonth"]) {
+		else if (usersStatus[userId]["selectMonth"]) {
 			if (checkCorrectMonthName(ctx.message.text)) {
 				await switchMonth(getMonthNum(ctx.message.text), ctx)
-				changeStatus(ctx.from.id,"selectDate")
-			}
-			else {
+				changeStatus(userId, "selectDate")
+			} else {
 				await ctx.reply("Inserisci un mese corretto!")
 			}
 		}
 	});
 
+	bot.callbackQuery("skip", async (ctx) => {
+		await ctx.reply("skip")
+	})
+
 	//Start the Bot
 	bot.start();
 }
 
-function getMonthsKeyboard(){
+function getMonthsKeyboard() {
 	let monthKeyboard = new Keyboard()
-	monthKeyboard.row("Gennaio","Febbraio","Marzo")
-	monthKeyboard.row("Aprile","Maggio","Giugno")
-	monthKeyboard.row("Luglio","Agosto","Settembre")
-	monthKeyboard.row("Ottobre","Novembre","Dicembre")
+	monthKeyboard.row("Gennaio", "Febbraio", "Marzo")
+	monthKeyboard.row("Aprile", "Maggio", "Giugno")
+	monthKeyboard.row("Luglio", "Agosto", "Settembre")
+	monthKeyboard.row("Ottobre", "Novembre", "Dicembre")
 	monthKeyboard.resized()
 	monthKeyboard.selective = true
 	return monthKeyboard
 }
+
 // function getYearsKeyboard(){
 //
 // }
 
-export function initStatus(id) {
+export function initStatus(id, status) {
 	usersStatus[id.toString()] = {
-		start: true,
+		start: false,
 		insert: false,
 		selectFood: false,
 		selectVisit: false,
@@ -166,12 +174,16 @@ export function initStatus(id) {
 		selectMonth: false,
 		selectYear: false,
 	}
+	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
+		usersStatus[id.toString()][key] = key === status;
+	});
 }
 
 export function changeStatus(id, cmd) {
 	Object.entries(usersStatus[id]).forEach(([key, _value]) => {
 		usersStatus[id][key] = key === cmd;
 	});
+	console.log(usersStatus[id]);
 }
 
 async function switchMonth(monthNum, ctx) {
