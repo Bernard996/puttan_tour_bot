@@ -21,6 +21,7 @@ export const usersStatus = {
 
 export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
 export let monthNumbers = {}
+let usersNewPlace = {}
 
 function main() {
 
@@ -177,6 +178,15 @@ export function initStatus(id, status) {
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;
 	});
+}
+
+export function initNewPlace(userId, chatId){
+  usersNewPlace[userId.toString()] = {
+    userId: userId,
+    chatId: chatId,
+    name: "",
+    url: ""
+  }
 }
 
 export function changeStatus(id, cmd) {

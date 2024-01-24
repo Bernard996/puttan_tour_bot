@@ -4,6 +4,7 @@ import {
   getCalendarKeyboard,
   initStatus,
   monthNumbers,
+  initNewPlace
 } from "./index.js";
 import { Keyboard } from "grammy";
 import dayjs from "dayjs";
@@ -52,6 +53,7 @@ export function setupCommands(bot) {
   //insert
   bot.command(cmd.insert, async (ctx) => {
     initStatus(ctx.from.id, "insert");
+    initNewPlace(ctx.from.id, ctx.chat.id);
     let username = ctx.from.username;
     const keyboard = new Keyboard();
     keyboard.add(btnMsgs[0], btnMsgs[1]);
