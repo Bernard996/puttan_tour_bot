@@ -54,7 +54,7 @@ export function setupCommands(bot) {
   //insert
   bot.command(cmd.insert, async (ctx) => {
     initStatus(ctx.from.id, "insert");
-    initNewPlace(ctx.from.id, ctx.chat.id);
+    initNewPlace(ctx.from.id.toString(), ctx.chat.id.toString());
     let username = ctx.from.username;
     const keyboard = new Keyboard();
     keyboard.add(btnMsgs[0], btnMsgs[1]);
@@ -72,7 +72,7 @@ export function setupCommands(bot) {
 
   //list
   bot.command(cmd.list, async (ctx) => {
-    let places = await dao.getPlaces(ctx.chat.id)
+    let places = await dao.getPlaces(ctx.chat.id.toString())
     console.log(places)
     await ctx.reply(formattedList(places), {
       parse_mode: "HTML",

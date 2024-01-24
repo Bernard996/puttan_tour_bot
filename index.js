@@ -1,6 +1,7 @@
-import {Bot, InlineKeyboard, Keyboard} from "grammy";
+import {Bot, Keyboard} from "grammy";
 import {setupCommands} from "./setupCommands.js";
 import dayjs from "dayjs";
+import dao from "./db/dao.mjs";
 
 ***REMOVED***
 const bot = new Bot(token);
@@ -33,6 +34,7 @@ function main() {
 
 		let username = ctx.from.username
 		let userId = ctx.from.id
+		const message = ctx.message.text;
 
 		if (usersStatus[userId] === undefined) {
 			initStatus(userId, 'start')
@@ -46,14 +48,15 @@ function main() {
 		//handle insert status, showing the keyboard
 		else if (usersStatus[userId]["insert"]) {
 			//error message with wrong strings
-			if (ctx.message.text !== btnMsgs[0] && ctx.message.text !== btnMsgs[1]) {
+			if (message !== btnMsgs[0] && message !== btnMsgs[1]) {
 				await ctx.reply(
 					`@${username} hai sbagliato! Devi scegliere la tipologia di posto da inserire!`
 				);
 			}
-			//right case, handling name insert
+			//right case, handling type choice
 			else {
-				if (ctx.message.text === btnMsgs[0]) {
+				usersNewPlace[userId]["type"] = message.split(" ")[2]
+				if (message === btnMsgs[0]) {
 					await ctx.reply(`@${username} inserisci il nome del posto dove mangiare`, {
 						reply_markup: {
 							selective: true,
@@ -61,7 +64,7 @@ function main() {
 						},
 					});
 					changeStatus(userId, "selectFood");
-				} else if (ctx.message.text === btnMsgs[1]) {
+				} else if (message === btnMsgs[1]) {
 					await ctx.reply(`@${username} inserisci il nome del posto da visitare`, {
 						reply_markup: {
 							selective: true,
@@ -73,12 +76,14 @@ function main() {
 			}
 		}
 
-		//handle url insert
+		//handle name insert
 		else if (usersStatus[userId]["selectFood"] || usersStatus[userId]["selectVisit"]) {
 			let key = new Keyboard()
+			usersNewPlace[userId]["name"] = message
 			key.selective = true
 			key.resized()
 			key.text("Salta")
+			changeStatus(userId, "selectUrl")
 			await ctx.reply(`@${username} Inserisci l'URL del posto selezionato (opzionale)`, {
 				reply_markup: {
 					...key,
@@ -87,9 +92,17 @@ function main() {
 			});
 		}
 
+
+		else if (usersStatus[userId]["selectUrl"]) {
+			if (message === "Salta") {
+				usersNewPlace[userId]["url"] = message
+			}
+			await insertPlace(usersNewPlace[userId], ctx)
+		}
+
 		//handle select date
 		else if (usersStatus[userId]["selectDate"]) {
-			if (ctx.message.text === "⬅️") {
+			if (message === "⬅️") {
 				let id = userId
 				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
@@ -103,7 +116,7 @@ function main() {
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			} else if (ctx.message.text === "➡️") {
+			} else if (message === "➡️") {
 				let id = userId
 				if (monthNumbers[id] === undefined) {
 					monthNumbers[id] = dayjs.month()
@@ -117,10 +130,10 @@ function main() {
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			} else if (checkCorrectDayNum(ctx.message.text, monthNumbers[userId])) {
-				dayNumbers[userId] = ctx.message.text
+			} else if (checkCorrectDayNum(message, monthNumbers[userId])) {
+				dayNumbers[userId] = message
 				await ctx.reply(`${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()} è la data che hai scelto!`)
-			} else if (checkCorrectMonthName(ctx.message.text)) {
+			} else if (checkCorrectMonthName(message)) {
 				calendar = getMonthsKeyboard()
 				await ctx.reply(`@${username} Scegli il mese`, {
 					reply_markup: calendar
@@ -133,8 +146,8 @@ function main() {
 
 		// handle month selection
 		else if (usersStatus[userId]["selectMonth"]) {
-			if (checkCorrectMonthName(ctx.message.text)) {
-				await switchMonth(getMonthNum(ctx.message.text), ctx)
+			if (checkCorrectMonthName(message)) {
+				await switchMonth(getMonthNum(message), ctx)
 				changeStatus(userId, "selectDate")
 			} else {
 				await ctx.reply("Inserisci un mese corretto!")
@@ -174,20 +187,21 @@ export function initStatus(id, status) {
 		selectDate: false,
 		selectMonth: false,
 		selectYear: false,
+		selectUrl: false
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;
 	});
 }
 
-export function initNewPlace(userId, chatId){
-  usersNewPlace[userId.toString()] = {
-    userId: userId,
-    chatId: chatId,
-    name: "",
-    url: "",
-    type: ""
-  }
+export function initNewPlace(userId, chatId) {
+	usersNewPlace[userId.toString()] = {
+		chatId: chatId,
+		userId: userId,
+		name: "",
+		type: "",
+		url: "",
+	}
 }
 
 export function changeStatus(id, cmd) {
@@ -317,6 +331,19 @@ export function getCalendarKeyboard(monthNum) {
 	calendar.resized()
 	calendar.selective = true
 	return calendar
+}
+
+async function insertPlace(place, ctx) {
+	dao.insertPlace(place.chatId, place.userId, place.name, place.url, place.type)
+		.then(async (_id) => {
+			await ctx.reply("Posto inserito correttamente!")
+		})
+		.catch(async (err) => {
+			await ctx.reply(`Errore durante l'inserimento del posto: ${err}`)
+		}).finally(() => {
+			changeStatus(ctx.from.id, "start")
+			delete usersNewPlace[place.userId.toString()]
+	})
 }
 
 main()
