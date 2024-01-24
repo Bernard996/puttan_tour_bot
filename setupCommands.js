@@ -82,6 +82,7 @@ export function setupCommands(bot) {
     });
   });
 
+  //visited
   bot.command(cmd.set_visited, async (ctx) => {
     let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
     if(places && places.length > 0){

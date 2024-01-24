@@ -4,12 +4,14 @@ db.run(`
   CREATE TABLE IF NOT EXISTS PLACES ( 
     ID INTEGER PRIMARY KEY AUTOINCREMENT, 
     CHATID VARCHAR NOT NULL, 
-    USERID TEXT NOT NULL, 
+    USERID VARCHAR NOT NULL, 
     TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    NAME VARCHAR NOT NULL, VISITED TIMESTAMP, 
-    RATING FLOAT NOT NULL DEFAULT 0, 
-    TYPE VARCHAR NOT NULL, URL 
-    TEXT NOT NULL
+    NAME VARCHAR NOT NULL, 
+    VISITED TIMESTAMP, 
+    RATING FLOAT, 
+    TYPE VARCHAR NOT NULL, 
+    URL TEXT NOT NULL,
+    CONSTRAINT UNIQUE_PLACE UNIQUE (CHATID, NAME)
     )
 `);
 
@@ -116,7 +118,7 @@ function getPlaceComments(placeId) {
 /**
  * Retrieves places based on specified criteria.
  *
- * @param {number} chatId - The ID of the chat associated with the places.
+ * @param {string} chatId - The ID of the chat associated with the places.
  * @param {string | null} type - The optional type or category of the places.
  * @param {boolean | null} visited - The optional flag to filter places based on whether they have been visited.
  * @returns {Promise<Object | null>} A promise that resolves with the information of the retrieved place or null if not found.
