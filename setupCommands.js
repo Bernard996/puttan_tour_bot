@@ -1,4 +1,4 @@
-import {btnMsgs, changeStatus, getCalendarKeyboard, initStatus, monthNumbers, usersStatus} from "./index.js";
+import {btnMsgs, changeStatus, getCalendarKeyboard, initStatus, monthNumbers} from "./index.js";
 import {Keyboard} from "grammy";
 import dayjs from "dayjs";
 
@@ -24,7 +24,6 @@ export function setupCommands(bot) {
 		let calendar = getCalendarKeyboard(monthNumbers[userId])
 		initStatus(userId);
 		changeStatus(userId,"selectDate")
-		console.log(usersStatus)
 		await ctx.reply(
 			"Ciao Zoccola! Questo è il nostro bot per gestire i posti dove andare a troieggiare insieme! Ancora non hai capito come funziona il bot? 😅 Sei proprio una puttana... Lancia il comando /faq per vedere i dettagli sui comandi disponibili e smettila di rompere i coglioni a me!", {
 				// reply_markup: {remove_keyboard: true},

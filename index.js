@@ -172,7 +172,6 @@ export function changeStatus(id, cmd) {
 	Object.entries(usersStatus[id]).forEach(([key, _value]) => {
 		usersStatus[id][key] = key === cmd;
 	});
-	console.log(usersStatus);
 }
 
 function switchMonth(monthNum, id) {
