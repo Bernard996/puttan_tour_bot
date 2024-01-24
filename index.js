@@ -17,12 +17,14 @@ export const usersStatus = {
 	// 	selectDate: false,
 	// 	selectMonth: false,
 	// 	selectYear: false,
+	// 	setVisited: false,
 	// }
 };
 
 export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
 export let monthNumbers = {}
 let usersNewPlace = {}
+let usersPlaceToEdit = {}
 
 function main() {
 
@@ -91,8 +93,11 @@ function main() {
 			});
 		}
 
+		//handle ask user to insert url
 		else if (usersStatus[userId]["askUrl"]) {}
 
+
+		//handle url insert
 		else if (usersStatus[userId]["selectUrl"]) {
 			usersNewPlace[userId]["url"] = message
 			await insertPlace(usersNewPlace[userId], ctx)
@@ -101,43 +106,50 @@ function main() {
 		//handle select date
 		else if (usersStatus[userId]["selectDate"]) {
 			if (message === "⬅️") {
-				let id = userId
-				if (monthNumbers[id] === undefined) {
-					monthNumbers[id] = dayjs.month()
+				if (monthNumbers[userId] === undefined) {
+					monthNumbers[userId] = dayjs.month()
 				}
-				monthNumbers[id] -= 1
-				if (monthNumbers[id] < 0) {
-					monthNumbers[id] = 11
+				monthNumbers[userId] -= 1
+				if (monthNumbers[userId] < 0) {
+					monthNumbers[userId] = 11
 				}
-				let monthName = getMonthName(monthNumbers[id])
-				calendar = getCalendarKeyboard(monthNumbers[id])
+				let monthName = getMonthName(monthNumbers[userId])
+				calendar = getCalendarKeyboard(monthNumbers[userId])
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			} else if (message === "➡️") {
-				let id = userId
-				if (monthNumbers[id] === undefined) {
-					monthNumbers[id] = dayjs.month()
+			}
+			else if (message === "➡️") {
+				if (monthNumbers[userId] === undefined) {
+					monthNumbers[userId] = dayjs.month()
 				}
-				monthNumbers[id] += 1
-				if (monthNumbers[id] > 11) {
-					monthNumbers[id] = 0
+				monthNumbers[userId] += 1
+				if (monthNumbers[userId] > 11) {
+					monthNumbers[userId] = 0
 				}
-				let monthName = getMonthName(monthNumbers[id])
-				calendar = getCalendarKeyboard(monthNumbers[id])
+				let monthName = getMonthName(monthNumbers[userId])
+				calendar = getCalendarKeyboard(monthNumbers[userId])
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
-			} else if (checkCorrectDayNum(message, monthNumbers[userId])) {
+			}
+			else if (checkCorrectDayNum(message, monthNumbers[userId])) {
 				dayNumbers[userId] = message
-				await ctx.reply(`${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()} è la data che hai scelto!`)
-			} else if (checkCorrectMonthName(message)) {
+				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
+				if(places && places.length > 0){
+					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
+					await dao.setPlaceVisited(place.ID, `${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
+					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
+				}
+			}
+			else if (checkCorrectMonthName(message)) {
 				calendar = getMonthsKeyboard()
 				await ctx.reply(`@${username} Scegli il mese`, {
 					reply_markup: calendar
 				})
 				changeStatus(userId, "selectMonth")
-			} else {
+			}
+			else {
 				await ctx.reply("Inserisci una data corretta!")
 			}
 		}
@@ -149,6 +161,27 @@ function main() {
 				changeStatus(userId, "selectDate")
 			} else {
 				await ctx.reply("Inserisci un mese corretto!")
+			}
+		}
+
+		//handle set visited
+		else if (usersStatus[userId]["setVisited"]) {
+			let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
+			let placesNames
+			if(places && places.length > 0){
+				placesNames = places.map((place) => place.NAME)
+				if(placesNames.includes(message)){
+					usersPlaceToEdit[userId] = places.find((place) => place.NAME === message)
+					console.log(usersPlaceToEdit[userId])
+					if (monthNumbers[userId] === undefined) {
+						monthNumbers[userId] = dayjs().month();
+					}
+					calendar = getCalendarKeyboard(monthNumbers[userId])
+					changeStatus(userId, "selectDate")
+					await ctx.reply(`@${username} Inserisci la data in cui hai visitato '${message}'`, {
+						reply_markup: calendar
+					})
+				}
 			}
 		}
 	});
@@ -165,6 +198,7 @@ function main() {
 			}
 		})
 	})
+
 	bot.callbackQuery("n", async (ctx) => {
 		await insertPlace(usersNewPlace[ctx.from.id], ctx)
 	})
@@ -184,9 +218,6 @@ function getMonthsKeyboard() {
 	return monthKeyboard
 }
 
-// function getYearsKeyboard(){
-//
-// }
 
 export function initStatus(id, status) {
 	usersStatus[id.toString()] = {
@@ -198,7 +229,8 @@ export function initStatus(id, status) {
 		selectMonth: false,
 		selectYear: false,
 		askUrl: false,
-		selectUrl: false
+		selectUrl: false,
+		setVisited: false,
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;
@@ -219,7 +251,6 @@ export function changeStatus(id, cmd) {
 	Object.entries(usersStatus[id]).forEach(([key, _value]) => {
 		usersStatus[id][key] = key === cmd;
 	});
-	console.log(usersStatus[id]);
 }
 
 async function switchMonth(monthNum, ctx) {

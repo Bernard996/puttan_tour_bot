@@ -17,6 +17,7 @@ export function setupCommands(bot) {
     faq: "faq",
     insert: "insert",
     list: "list",
+    set_visited: "set_visited"
   };
 
   const cmdDesc = {
@@ -24,14 +25,12 @@ export function setupCommands(bot) {
     faq: "Faq-ami tutta",
     insert: "Oh sì, mettilo dentro",
     list: "Body count",
+    set_visited: "Qui ho già una clientela"
   };
 
   //start
   bot.command(cmd.start, async (ctx) => {
     let userId = ctx.from.id;
-    if (monthNumbers[userId] === undefined) {
-      monthNumbers[userId] = dayjs().month();
-    }
     initStatus(userId, "start");
     await ctx.reply(
       "Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!",
@@ -73,7 +72,6 @@ export function setupCommands(bot) {
   //list
   bot.command(cmd.list, async (ctx) => {
     let places = await dao.getPlaces(ctx.chat.id.toString())
-    console.log(places)
     await ctx.reply(formattedList(places), {
       parse_mode: "HTML",
       link_preview_options: {
@@ -81,6 +79,31 @@ export function setupCommands(bot) {
       },
     });
   });
+
+  bot.command(cmd.set_visited, async (ctx) => {
+    let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
+    if(places && places.length > 0){
+      initStatus(ctx.from.id, "setVisited")
+      let placesKeyboard = new Keyboard()
+      places.forEach(p => {
+        placesKeyboard.row()
+        placesKeyboard.add(p.NAME)
+      })
+      placesKeyboard.oneTime()
+      placesKeyboard.resize_keyboard = true
+      placesKeyboard.selective = true
+      await ctx.reply(`@${ctx.from.username} Scegli il posto`, {
+        reply_markup: {
+          ...placesKeyboard,
+          force_reply: true
+        }
+      })
+    }
+    else {
+      await ctx.reply(`@${ctx.from.username} Non ci sono posti da visitare!`)
+      changeStatus(ctx.from.id, "start")
+    }
+  })
 
   //menu creation
   bot.api.setMyCommands(
