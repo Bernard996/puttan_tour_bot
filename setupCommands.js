@@ -34,7 +34,7 @@ export function setupCommands(bot) {
     let userId = ctx.from.id;
     initStatus(userId, "start");
     await ctx.reply(
-      "Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!",
+      `@${ctx.from.username}Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!`,
       {
         reply_markup: { remove_keyboard: true, selective: true },
       }
