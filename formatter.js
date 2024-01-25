@@ -34,7 +34,7 @@ export function formattedList(places) {
 	return res
 }
 
-export async function formattedComments(comments, ctx){
+export async function formattedComments(name, comments, ctx){
 	if (!comments || comments.length === 0) return `Non ci sono commenti 😢\n\nAggiungi un nuovo commento con /rate`
 	let promises = await comments.map(async (c) => {
 		let res = ""
@@ -46,6 +46,7 @@ export async function formattedComments(comments, ctx){
 		return res
 	})
 	return Promise.all(promises).then((values) => {
+		values.unshift(`<b>${name}</b>\n\n`)
 		return values.join("")
 	})
 }

@@ -312,7 +312,7 @@ function main() {
 				if (placesNames.includes(message)) {
 					let place = places.find((place) => place.NAME === message)
 					let comments = await dao.getPlaceComments(place.ID)
-					await ctx.reply(await formattedComments(comments, ctx), {parse_mode: "HTML"})
+					await ctx.reply(await formattedComments(place.NAME, comments, ctx), {parse_mode: "HTML"})
 				}
 			}
 		}
