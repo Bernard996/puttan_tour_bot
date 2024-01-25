@@ -2,7 +2,7 @@ import {Bot, InlineKeyboard, Keyboard} from "grammy";
 import {setupCommands} from "./setupCommands.js";
 import dayjs from "dayjs";
 import dao from "./db/dao.mjs";
-import {formattedList} from "./formatter.js";
+import {formattedComments, formattedList} from "./formatter.js";
 
 ***REMOVED***
 const bot = new Bot(token);
@@ -193,7 +193,6 @@ function main() {
 				placesNames = places.map((place) => place.NAME)
 				if (placesNames.includes(message)) {
 					usersPlaceToEdit[userId] = places.find((place) => place.NAME === message)
-					console.log(usersPlaceToEdit[userId])
 					if (monthNumbers[userId] === undefined) {
 						monthNumbers[userId] = dayjs().month();
 					}
@@ -253,6 +252,7 @@ function main() {
 			})
 		}
 
+		//handle visited filter
 		else if (usersStatus[userId]["filterVisited"]){
 			if(message === "Tutti i posti"){
 				userListParams[userId] = {
@@ -282,6 +282,7 @@ function main() {
 			})
 		}
 
+		//handle type filter
 		else if (usersStatus[userId]["filterType"]){
 			if(message === "Tutti i posti"){
 				userListParams[userId].type = null
@@ -292,7 +293,6 @@ function main() {
 			else if(message === "Posti da visitare"){
 				userListParams[userId].type = "visitare"
 			}
-			console.log(userListParams[userId])
 			let places = await dao.getPlaces(ctx.chat.id.toString(), userListParams[userId].type, userListParams[userId].visited)
 			delete userListParams[userId]
 			await ctx.reply(formattedList(places), {
@@ -302,6 +302,19 @@ function main() {
 				},
 			});
 			changeStatus(userId, "start")
+		}
+
+		//handle comments
+		else if (usersStatus[userId]["comments"]){
+			let places = await dao.getPlaces(ctx.chat.id.toString(), null, true)
+			let placesNames = places.map((place) => place.NAME)
+			if (places && places.length > 0) {
+				if (placesNames.includes(message)) {
+					let place = places.find((place) => place.NAME === message)
+					let comments = await dao.getPlaceComments(place.ID)
+					await ctx.reply(await formattedComments(comments, ctx), {parse_mode: "HTML"})
+				}
+			}
 		}
 
 	});
@@ -375,6 +388,7 @@ export function initStatus(id, status) {
 		setComment: false,
 		filterVisited: false,
 		filterType: false,
+		comments: false,
 	}
 	Object.entries(usersStatus[id.toString()]).forEach(([key, _value]) => {
 		usersStatus[id.toString()][key] = key === status;

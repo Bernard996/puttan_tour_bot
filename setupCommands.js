@@ -15,7 +15,8 @@ export function setupCommands(bot) {
     insert: "insert",
     list: "list",
     set_visited: "set_visited",
-    rate: "rate"
+    rate: "rate",
+    comments: "comments"
   };
 
   const cmdDesc = {
@@ -24,7 +25,8 @@ export function setupCommands(bot) {
     insert: "Oh sì, mettilo dentro",
     list: "Body count",
     set_visited: "Qui ho già una clientela",
-    rate: "Quanto sono stata brava?"
+    rate: "Quanto sono stata brava?",
+    comments: "Direttamente da BitchAdvisor"
   };
 
   //start
@@ -93,7 +95,7 @@ export function setupCommands(bot) {
     // });
   });
 
-  //visited
+  //set visited
   bot.command(cmd.set_visited, async (ctx) => {
     let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
     if(places && places.length > 0){
@@ -138,6 +140,28 @@ export function setupCommands(bot) {
     }
     else {
       await ctx.reply(`@${ctx.from.username} Non ci sono posti da visitare!`)
+      changeStatus(ctx.from.id, "start")
+    }
+  })
+
+  //get comments
+  bot.command(cmd.comments, async (ctx) => {
+    let places = await dao.getPlaces(ctx.chat.id.toString(), null, true)
+    if(places && places.length > 0){
+      initStatus(ctx.from.id, cmd.comments)
+      let placesKeyboard = new Keyboard()
+      places.forEach(p => {
+        placesKeyboard.row(p.NAME)
+      })
+      placesKeyboard.oneTime()
+      placesKeyboard.resize_keyboard = true
+      placesKeyboard.selective = true
+      await ctx.reply(`@${ctx.from.username} Scegli il posto di cui vedere i commenti`, {
+        reply_markup: placesKeyboard,
+      })
+    }
+    else {
+      await ctx.reply(`@${ctx.from.username} Non ci sono posti visitati!`)
       changeStatus(ctx.from.id, "start")
     }
   })
