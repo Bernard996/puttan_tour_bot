@@ -5,10 +5,10 @@ import dao from "./db/dao.mjs";
 import {formattedComments, formattedList} from "./formatter.js";
 
 //production token
-// ***REMOVED***
+***REMOVED***
 
 //test token
-const token = "6962263944:AAHdSpao8X_oY_xJzKnMB7a9hlJTEPtxr3A"
+***REMOVED***
 
 const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
