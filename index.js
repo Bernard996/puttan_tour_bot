@@ -253,7 +253,7 @@ function main() {
 			await dao.insertRating(usersPlaceToEdit[userId].ID, userId, usersPlaceToEdit[userId].RATING, message)
 			changeStatus(userId, "start")
 			await ctx.reply(`@${username} Hai votato correttamente il posto!`, {
-				keyboard: {remove_keyboard: true, selective: true}
+				reply_markup: {remove_keyboard: true, selective: true}
 			})
 		}
 
@@ -304,6 +304,10 @@ function main() {
 				link_preview_options: {
 					is_disabled: true
 				},
+				reply_markup: {
+					remove_keyboard: true,
+					selective: true
+				}
 			});
 			changeStatus(userId, "start")
 		}
@@ -352,7 +356,7 @@ function main() {
 		await dao.insertRating(usersPlaceToEdit[ctx.from.id].ID, ctx.from.id, usersPlaceToEdit[ctx.from.id].RATING, "")
 		changeStatus(ctx.from.id, "start")
 		await ctx.reply(`@${ctx.from.username} Hai votato correttamente il posto!`, {
-			keyboard: {remove_keyboard: true, selective: true}
+			reply_markup: {remove_keyboard: true, selective: true}
 		})
 	})
 
