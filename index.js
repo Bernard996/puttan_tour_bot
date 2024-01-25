@@ -26,10 +26,11 @@ export const usersStatus = {
 };
 
 export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
-export let monthNumbers = {}
+let monthNumbers = {}
 let usersNewPlace = {}
 let usersPlaceToEdit = {}
 let userListParams = {}
+let userYear = {}
 
 function main() {
 
@@ -119,7 +120,7 @@ function main() {
 					monthNumbers[userId] = 11
 				}
 				let monthName = getMonthName(monthNumbers[userId])
-				calendar = getCalendarKeyboard(monthNumbers[userId])
+				calendar = getCalendarKeyboard(monthNumbers[userId], userYear[userId].year)
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
@@ -133,7 +134,7 @@ function main() {
 					monthNumbers[userId] = 0
 				}
 				let monthName = getMonthName(monthNumbers[userId])
-				calendar = getCalendarKeyboard(monthNumbers[userId])
+				calendar = getCalendarKeyboard(monthNumbers[userId], userYear[userId].year)
 				await ctx.reply(`@${username}: ${monthName}`, {
 					reply_markup: calendar
 				})
@@ -159,7 +160,7 @@ function main() {
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
 					await dao.setPlaceVisited(place.ID, `${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
 					delete usersPlaceToEdit[userId]
-					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`, {
+					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${userYear[userId].year}`, {
 						reply_markup: {
 							remove_keyboard: true,
 							selective: true
@@ -173,6 +174,13 @@ function main() {
 					reply_markup: calendar
 				})
 				changeStatus(userId, "selectMonth")
+			}
+			else if (message === userYear[userId].year.toString()) {
+				let yearKeyboard = getYearsKeyboard(userId)
+				changeStatus(userId, "selectYear")
+				await ctx.reply(`@${username} Seleziona l'anno`, {
+					reply_markup: yearKeyboard
+				})
 			}
 			else {
 				await ctx.reply("Inserisci una data corretta!")
@@ -189,6 +197,35 @@ function main() {
 			}
 		}
 
+		//handle year selection
+		else if (usersStatus[userId]["selectYear"]) {
+			if(message === '⬅️'){
+				userYear[userId].page -= 1
+				let yearKeyboard = getYearsKeyboard(userId)
+				await ctx.reply(`@${username} Seleziona l'anno`, {
+					reply_markup: yearKeyboard
+				})
+			}
+			else if(message === '➡️'){
+				userYear[userId].page += 1
+				let yearKeyboard = getYearsKeyboard(userId)
+				await ctx.reply(`@${username} Seleziona l'anno`, {
+					reply_markup: yearKeyboard
+				})
+			}
+			else if(message.match(/^\d+$/)){
+				userYear[userId].year = parseInt(message)
+				let yearKeyboard = getCalendarKeyboard(monthNumbers[userId], userYear[userId].year)
+				changeStatus(userId, "selectDate")
+				await ctx.reply(`@${username} Inserisci la data in cui hai visitato 'prova 2'`, {
+					reply_markup: yearKeyboard
+				})
+			}
+			else {
+				await ctx.reply("Inserisci un anno corretto!")
+			}
+		}
+
 		//handle set visited
 		else if (usersStatus[userId]["setVisited"]) {
 			let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
@@ -200,7 +237,14 @@ function main() {
 					if (monthNumbers[userId] === undefined) {
 						monthNumbers[userId] = dayjs().month();
 					}
-					calendar = getCalendarKeyboard(monthNumbers[userId])
+					if(userYear[userId] === undefined){
+						userYear[userId] =
+							{
+								year: dayjs().year(),
+								page: 0
+							}
+					}
+					calendar = getCalendarKeyboard(monthNumbers[userId], userYear[userId].year)
 					changeStatus(userId, "selectDate")
 					await ctx.reply(`@${username} Inserisci la data in cui hai visitato '${message}'`, {
 						reply_markup: calendar
@@ -381,6 +425,21 @@ function getMonthsKeyboard() {
 	return monthKeyboard
 }
 
+function getYearsKeyboard(userId) {
+	let yearKeyboard = new Keyboard()
+	let year = userYear[userId].year
+	let offset = 3*userYear[userId].page
+	let offsetYear = year + offset
+	yearKeyboard.row("⬅️", dayjs().year().toString(), "➡️")
+	let year1 = (offsetYear - 2).toString()
+	let year2 = (offsetYear - 1).toString()
+	let year3 = (offsetYear).toString()
+	yearKeyboard.row(year1, year2, year3)
+	yearKeyboard.resize_keyboard = true
+	yearKeyboard.selective = true
+	return yearKeyboard
+}
+
 export function initStatus(id, status) {
 	usersStatus[id.toString()] = {
 		start: false,
@@ -426,7 +485,7 @@ async function switchMonth(monthNum, ctx) {
 	let username = ctx.from.username
 	let monthName = getMonthName(monthNum)
 	monthNumbers[id] = monthNum
-	let calendar = getCalendarKeyboard(monthNum)
+	let calendar = getCalendarKeyboard(monthNum, userYear[id].year)
 	await ctx.reply(`@${username}: ${monthName}`, {
 		reply_markup: calendar
 	})
@@ -516,7 +575,7 @@ function checkCorrectDayNum(dayNum, monthNum) {
 	}
 }
 
-export function getCalendarKeyboard(monthNum) {
+export function getCalendarKeyboard(monthNum, year) {
 	let monthName = getMonthName(monthNum)
 	let days = 0
 
@@ -529,7 +588,7 @@ export function getCalendarKeyboard(monthNum) {
 	}
 	let calendar = new Keyboard()
 	calendar.row("Oggi")
-	calendar.row("⬅️", monthName, "➡️")
+	calendar.row("⬅️", monthName, year.toString(), "➡️")
 	for (let i of Array(days).keys()) {
 		if (i % 7 === 0) {
 			calendar.row()
