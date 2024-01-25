@@ -60,7 +60,6 @@ export function setupCommands(bot) {
     let username = ctx.from.username;
     const keyboard = new Keyboard();
     keyboard.add(btnMsgs[0], btnMsgs[1]);
-    keyboard.oneTime();
     keyboard.resize_keyboard = true;
     keyboard.selective = true;
     await ctx.reply(
@@ -78,7 +77,6 @@ export function setupCommands(bot) {
     kb.add("Tutti i posti")
     kb.add("Posti visitati")
     kb.add("Posti non visitati")
-    kb.oneTime()
     kb.resize_keyboard = true
     kb.selective = true
 
@@ -104,7 +102,6 @@ export function setupCommands(bot) {
       places.forEach(p => {
         placesKeyboard.row(p.NAME)
       })
-      placesKeyboard.oneTime()
       placesKeyboard.resize_keyboard = true
       placesKeyboard.selective = true
       await ctx.reply(`@${ctx.from.username} Scegli il posto`, {
@@ -128,7 +125,6 @@ export function setupCommands(bot) {
       places.forEach(p => {
         placesKeyboard.row(p.NAME)
       })
-      placesKeyboard.oneTime()
       placesKeyboard.resize_keyboard = true
       placesKeyboard.selective = true
       await ctx.reply(`@${ctx.from.username} Scegli il posto da votare`, {
@@ -153,7 +149,6 @@ export function setupCommands(bot) {
       places.forEach(p => {
         placesKeyboard.row(p.NAME)
       })
-      placesKeyboard.oneTime()
       placesKeyboard.resize_keyboard = true
       placesKeyboard.selective = true
       await ctx.reply(`@${ctx.from.username} Scegli il posto di cui vedere i commenti`, {

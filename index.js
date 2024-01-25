@@ -4,7 +4,12 @@ import dayjs from "dayjs";
 import dao from "./db/dao.mjs";
 import {formattedComments, formattedList} from "./formatter.js";
 
-***REMOVED***
+//production token
+// ***REMOVED***
+
+//test token
+const token = "6962263944:AAHdSpao8X_oY_xJzKnMB7a9hlJTEPtxr3A"
+
 const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
 const days_30 = [3, 5, 8, 10]
@@ -90,7 +95,8 @@ function main() {
 			await ctx.reply(`@${username} Vuoi inserire un URL per il posto?`, {
 				reply_markup: {
 					...key,
-					force_reply: true
+					force_reply: true,
+					selective: true
 				},
 			});
 		}
@@ -215,7 +221,6 @@ function main() {
 					usersPlaceToEdit[userId] = places.find((place) => place.NAME === message)
 					let rateKeyboard = new Keyboard()
 					rateKeyboard.row("⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐")
-					rateKeyboard.oneTime()
 					rateKeyboard.resize_keyboard = true
 					rateKeyboard.selective = true
 					await ctx.reply(`@${username} Inserisci il voto da 1 a 5`, {
@@ -274,7 +279,6 @@ function main() {
 			kb.add("Tutti i posti")
 			kb.add("Posti da mangiare")
 			kb.add("Posti da visitare")
-			kb.oneTime()
 			kb.resize_keyboard = true
 			kb.selective = true
 			await ctx.reply(`@${username} Scegli il tipo di posto`, {
@@ -518,9 +522,6 @@ export function getCalendarKeyboard(monthNum) {
 		days = 28
 	}
 	let calendar = new Keyboard()
-	// calendar.row("Cambia mese")
-	// calendar.row("Cambia mese", "Anni")
-	// calendar.row(dayjs().year().toString())
 	calendar.row("Oggi")
 	calendar.row("⬅️", monthName, "➡️")
 	for (let i of Array(days).keys()) {
