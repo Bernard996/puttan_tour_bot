@@ -299,7 +299,7 @@ function main() {
 			}
 			let places = await dao.getPlaces(ctx.chat.id.toString(), userListParams[userId].type, userListParams[userId].visited)
 			delete userListParams[userId]
-			await ctx.reply(formattedList(places), {
+			await ctx.reply(formattedList(places)+`\n\n\n@${username}`, {
 				parse_mode: "HTML",
 				link_preview_options: {
 					is_disabled: true
