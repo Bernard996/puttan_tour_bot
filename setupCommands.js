@@ -50,6 +50,8 @@ export function setupCommands(bot) {
         `/${cmd.insert}: inserisci un nuovo posto\n` +
         `/${cmd.list}: elenca tutti i posti\n` +
         `/${cmd.set_visited}: aggiorna un posto come visitato\n`
+        `/${cmd.rate}: inserisci un voto e un commento opzionale a un posto che hai visitato\n`
+        `/${cmd.comments}: visualizza i commenti di un posto\n`
     );
   });
 
