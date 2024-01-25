@@ -4,12 +4,6 @@ import dayjs from "dayjs";
 import dao from "./db/dao.mjs";
 import {formattedComments, formattedList} from "./formatter.js";
 
-//production token
-***REMOVED***
-
-//test token
-***REMOVED***
-
 const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
 const days_30 = [3, 5, 8, 10]
