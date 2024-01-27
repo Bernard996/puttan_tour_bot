@@ -5,9 +5,8 @@ import dao from "./db/dao.mjs";
 import {formattedComments, formattedList} from "./formatter.js";
 import 'dotenv/config'
 
-// const token= process.env.TOKEN;
-const token= process.env.TEST_TOKEN;
-console.log(token)
+const token= process.env.TOKEN;
+// const token= process.env.TEST_TOKEN;
 const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
 const days_30 = [3, 5, 8, 10]
