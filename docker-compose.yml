@@ -1,7 +1,7 @@
 version: "3"
 services: 
   db:
-    image: mysql
+    image: yobasystems/alpine-mariadb
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
