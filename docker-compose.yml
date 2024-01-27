@@ -1,7 +1,8 @@
 version: "3"
 services: 
   db:
-    image: yobasystems/alpine-mariadb
+    image: yobasystems/alpine-mariadb # for raspberry only
+    # image: mysql # for dev
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
