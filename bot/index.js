@@ -46,12 +46,14 @@ function main() {
 		if (usersStatus[userId] === undefined) {
 			initStatus(userId, 'start')
 		}
+		/*
 		//handle start status
 		if (usersStatus[userId]["start"]) {
 			await ctx.reply(`Dammi un comando @${username}, sono la tua schiava!`, {
 				reply_markup: {remove_keyboard: true, selective: true}
 			});
 		}
+		*/
 		//handle insert status, showing the keyboard
 		else if (usersStatus[userId]["insert"]) {
 			//error message with wrong strings
