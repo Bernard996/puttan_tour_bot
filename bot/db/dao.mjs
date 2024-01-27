@@ -214,15 +214,10 @@ async function getPlaceInfo(placeId) {
 async function setPlaceVisited(placeId, timestamp = null) {
   let query;
   let params;
-  function addZero(value) {
-    return value < 10 ? `0${value}` : value;
-  }
-  let [day, month, year] = timestamp.split("/");
-  formattedTimestamp = `${year}-${addZero(month)}-${addZero(day)}`;
-
-  if (formattedTimestamp !== null) {
+  
+  if (timestamp !== null) {
     query = "UPDATE PLACES SET VISITED = ? WHERE ID = ?";
-    params = [formattedTimestamp, placeId];
+    params = [timestamp, placeId];
   } else {
     query = "UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?";
     params = [placeId];

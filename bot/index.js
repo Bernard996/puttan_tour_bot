@@ -158,7 +158,7 @@ function main() {
 				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
 				if (places && places.length > 0) {
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
-					await dao.setPlaceVisited(place.ID, `${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${dayjs().year()}`)
+					await dao.setPlaceVisited(place.ID, `${dayjs().year()}-${monthNumbers[userId] + 1}-${dayNumbers[userId]}`)
 					delete usersPlaceToEdit[userId]
 					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayNumbers[userId]}/${monthNumbers[userId] + 1}/${userYear[userId].year}`, {
 						reply_markup: {
