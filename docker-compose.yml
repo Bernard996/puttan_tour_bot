@@ -9,13 +9,27 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       DATABASE_HOST: ${DATABASE_HOST}
     volumes:
-      - ./db/initQueries.sql:/docker-entrypoint-initdb.d/initQueries.sql
+      - ./bot/db/initQueries.sql:/docker-entrypoint-initdb.d/initQueries.sql
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
     healthcheck:
       test: "exit 0"
     ports:
       - "3306:3306"
-
+  bot:
+    image: node:latest
+    environment:
+      TOKEN: ${TOKEN}
+      TEST_TOKEN: ${TEST_TOKEN}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DATABASE_HOST: ${DATABASE_HOST}
+    build: 
+      context: ./bot
+    depends_on:
+      db:
+        condition: service_healthy
 volumes:
   mysql_data:

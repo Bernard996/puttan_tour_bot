@@ -5,9 +5,9 @@ import dao from "./db/dao.mjs";
 import {formattedComments, formattedList} from "./formatter.js";
 import 'dotenv/config'
 
-const token= process.env.TOKEN;
-// const token= process.env.TEST_TOKEN;
-
+// const token= process.env.TOKEN;
+const token= process.env.TEST_TOKEN;
+console.log(token)
 const bot = new Bot(token);
 const days_31 = [0, 2, 4, 6, 7, 9, 11]
 const days_30 = [3, 5, 8, 10]
@@ -143,7 +143,7 @@ function main() {
 				let places = await dao.getPlaces(ctx.chat.id.toString(), null, false)
 				if (places && places.length > 0) {
 					let place = places.find((place) => place.NAME === usersPlaceToEdit[userId].NAME)
-					await dao.setPlaceVisited(place.ID, dayjs().format("DD/MM/YYYY"))
+					await dao.setPlaceVisited(place.ID, dayjs().format("YYYY-MM-DD"))
 					delete usersPlaceToEdit[userId]
 					await ctx.reply(`Hai visitato ${place.NAME} in data ${dayjs().format("DD/MM/YYYY")}`, {
 						reply_markup: {
