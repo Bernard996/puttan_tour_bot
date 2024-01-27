@@ -1,7 +1,8 @@
 version: "3"
 services: 
   db:
-    image: yobasystems/alpine-mariadb
+    image: mysql:latest # per sviluppo
+    # image: yobasystems/alpine-mariadb # per raspberrypi
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -10,7 +11,7 @@ services:
       DATABASE_HOST: ${DATABASE_HOST}
     volumes:
       - ./bot/db/initQueries.sql:/docker-entrypoint-initdb.d/initQueries.sql
-      - mysql_data:/var/lib/mysql
+      - mysql_data_test:/var/lib/mysql
     restart: unless-stopped
     healthcheck:
       test: "exit 0"
@@ -32,4 +33,4 @@ services:
       db:
         condition: service_healthy
 volumes:
-  mysql_data:
+  mysql_data_test:
