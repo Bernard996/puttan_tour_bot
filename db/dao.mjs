@@ -1,72 +1,31 @@
-import mysql from "mysql2";
-import 'dotenv/config'
+import sqlite3 from "sqlite3";
+const db = new sqlite3.Database("db/db.sqlite");
+db.run(`
+  CREATE TABLE IF NOT EXISTS PLACES ( 
+    ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+    CHATID VARCHAR NOT NULL, 
+    USERID VARCHAR NOT NULL, 
+    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    NAME VARCHAR NOT NULL, 
+    VISITED TIMESTAMP, 
+    RATING FLOAT, 
+    TYPE VARCHAR NOT NULL, 
+    URL TEXT NOT NULL,
+    CONSTRAINT UNIQUE_PLACE UNIQUE (CHATID, NAME)
+    )
+`);
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  port: 3306,
-});
+db.run(`
+  CREATE TABLE IF NOT EXISTS RATING (
+    PLACEID INTEGER NOT NULL,
+    USERID TEXT NOT NULL,
+    RATING FLOAT NOT NULL,
+    COMMENT TEXT,
+    PRIMARY KEY (PLACEID, USERID),
+    FOREIGN KEY (PLACEID) REFERENCES PLACES(ID)
+  )
+`);
 
-// Connettiti al server MySQL
-db.connect((err) => {
-  if (err) {
-    console.error("Connection error:", err);
-    return;
-  }
-  console.log("Connected to MYSQL server");
-  createTables();
-});
-
-// Function to run queries
-async function runQuery(query, params = []) {
-  return new Promise((resolve, reject) => {
-    db.query(query, params, (err, results) => {
-      if (err) {
-        console.error("Error in query:", query, "\n", err);
-        reject(err);
-      } else {
-        resolve(results);
-      }
-    });
-  });
-}
-
-// Function to iunitialize the database
-async function createTables() {
-  try {
-    await runQuery(`
-      CREATE TABLE IF NOT EXISTS PLACES ( 
-        ID INT AUTO_INCREMENT PRIMARY KEY, 
-        CHATID VARCHAR(255) NOT NULL, 
-        USERID VARCHAR(255) NOT NULL, 
-        TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-        NAME VARCHAR(255) NOT NULL, 
-        VISITED TIMESTAMP, 
-        RATING FLOAT, 
-        TYPE VARCHAR(255) NOT NULL, 
-        URL TEXT NOT NULL,
-        CONSTRAINT UNIQUE_PLACE UNIQUE (CHATID, NAME)
-      )
-    `);
-
-    await runQuery(`
-      CREATE TABLE IF NOT EXISTS RATING (
-        PLACEID INT NOT NULL,
-        USERID VARCHAR(255) NOT NULL,
-        RATING FLOAT NOT NULL,
-        COMMENT TEXT,
-        PRIMARY KEY (PLACEID, USERID),
-        FOREIGN KEY (PLACEID) REFERENCES PLACES(ID)
-      )
-    `);
-
-    console.log("Tables created successfully.");
-  } catch (error) {
-    console.error("Error during tables creation:", error);
-  }
-}
 
 /**
  * Inserts a new place into the database.
@@ -80,17 +39,22 @@ async function createTables() {
  * @throws {Error} Thrown if there are errors during the database operations.
  */
 
-async function insertPlace(chatId, userId, name, type, url) {
-  const query = ` INSERT INTO PLACES (CHATID, USERID, NAME, TYPE, URL) VALUES (?, ?, ?, ?, ?)`;
-
-  try {
-    const result = await runQuery(query, [chatId, userId, name, type, url]);
-    return result.insertId;
-  } catch (error) {
-    console.error("Error in insertPlace:", error);
-    throw error;
-  }
+function insertPlace(chatId, userId, name, type, url) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      "INSERT INTO PLACES (CHATID, USERID, NAME, TYPE, URL) VALUES (?, ?, ?, ?, ?)",
+      [chatId, userId, name, type, url],
+      function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.lastID);
+        }
+      }
+    );
+  });
 }
+
 
 /**
  * Inserts a new rating and updates the average rating for a specific place.
@@ -102,32 +66,48 @@ async function insertPlace(chatId, userId, name, type, url) {
  * @returns {Promise<void>} A promise that resolves when the rating is successfully inserted.
  * @throws {Error} Thrown if there are errors during the database operations.
  */
-async function insertRating(placeId, userId, rating, comment) {
-  const insertQuery = `
-    INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT)
-    VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE RATING = VALUES(RATING), COMMENT = VALUES(COMMENT)
-  `;
+function insertRating(placeId, userId, rating, comment) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      "INSERT INTO RATING (PLACEID, USERID, RATING, COMMENT) VALUES (?, ?, ?, ?) " +
+      "ON CONFLICT(PLACEID, USERID) " +
+      "DO UPDATE SET RATING = ?, COMMENT = ?",
+      [placeId, userId, rating, comment, rating, comment],
+      (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
 
-  const updatePlacesQuery = `
-    UPDATE PLACES
-    SET RATING = (
-      SELECT AVG(RATING) 
-      FROM RATING 
-      WHERE PLACEID = ?
-    )
-    WHERE ID = ?
-  `;
+        // Aggiorna la tabella PLACES con la nuova media del rating
+        db.get(
+          "SELECT COUNT(*) as count, SUM(RATING) as sum FROM RATING WHERE PLACEID = ?",
+          [placeId],
+          (err, result) => {
+            if (err) {
+              reject(err);
+              return;
+            }
 
-  try {
-    await runQuery(insertQuery, [placeId, userId, rating, comment]);
-    await runQuery(updatePlacesQuery, [placeId, placeId]);
-    console.log("Rating inserted and average updated successfully.");
-  } catch (error) {
-    console.error("Error in insertRating:", error);
-    throw error;
-  }
+            const count = result.count || 0;
+            const sum = result.sum || 0;
+            const avg = (sum + rating) / (count + 1);
+
+            db.run("UPDATE PLACES SET RATING = ? WHERE ID = ?", [avg, placeId], (err) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve();
+            });
+          }
+        );
+      }
+    );
+  });
 }
+
+
 
 /**
  * Retrieves comments associated with a specific place.
@@ -137,15 +117,13 @@ async function insertRating(placeId, userId, rating, comment) {
  * @throws {Error} Thrown if there are errors during the database query.
  *
  */
-async function getPlaceComments(placeId) {
-  const query = 'SELECT * FROM RATING WHERE PLACEID = ?';
-  try {
-    const rows = await runQuery(query, [placeId]);
-    return rows;
-  } catch (error) {
-    console.error('Error in getPlaceComments:', error);
-    throw error;
-  }
+function getPlaceComments(placeId) {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM RATING WHERE PLACEID = ?", [placeId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
 }
 
 /**
@@ -157,30 +135,26 @@ async function getPlaceComments(placeId) {
  * @returns {Promise<Object | null>} A promise that resolves with the information of the retrieved place or null if not found.
  * @throws {Error} Thrown if there are errors during the database query.
  */
-async function getPlaces(chatId, type = null, visited = null) {
-  let query = 'SELECT * FROM PLACES WHERE CHATID = ?';
-  const params = [chatId];
+function getPlaces(chatId, type = null, visited = null) {
+  return new Promise((resolve, reject) => {
+    let query = "SELECT * FROM PLACES WHERE CHATID = ?";
+    let params = [chatId];
 
-  if (type !== null) {
-    query += ' AND TYPE = ?';
-    params.push(type);
-  }
-
-  if (visited !== null) {
-    if (visited) {
-      query += ' AND VISITED IS NOT NULL';
-    } else {
-      query += ' AND VISITED IS NULL';
+    if (type !== null) {
+      query += " AND TYPE=?";
+      params.push(type);
     }
-  }
 
-  try {
-    const rows = await runQuery(query, params);
-    return rows;
-  } catch (error) {
-    console.error('Error in getPlaces:', error);
-    throw error;
-  }
+    if (visited !== null) {
+      if (visited) query += " AND VISITED IS NOT NULL";
+      else query += " AND VISITED IS NULL";
+    }
+
+    db.all(query, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
 }
 
 /**
@@ -191,16 +165,13 @@ async function getPlaces(chatId, type = null, visited = null) {
  * @throws {Error} Thrown if there are errors during the database query.
  */
 
-async function getPlaceInfo(placeId) {
-  const query = 'SELECT * FROM PLACES WHERE ID = ?';
-
-  try {
-    const row = await runQuery(query, [placeId]);
-    return row[0]; 
-  } catch (error) {
-    console.error('Error in getPlaceInfo:', error);
-    throw error;
-  }
+function getPlaceInfo(placeId) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT * FROM PLACES WHERE ID = ?", [placeId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
 }
 
 /**
@@ -212,47 +183,49 @@ async function getPlaceInfo(placeId) {
  * @throws {Error} Thrown if there are errors during the database operations.
  */
 
-async function setPlaceVisited(placeId, timestamp = null) {
-  let query;
-  let params;
+function setPlaceVisited(placeId, timestamp = null) {
+  return new Promise((resolve, reject) => {
+    let query;
+    let params;
 
-  if (timestamp !== null) {
-    query = 'UPDATE PLACES SET VISITED = ? WHERE ID = ?';
-    params = [timestamp, placeId];
-  } else {
-    query = 'UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?';
-    params = [placeId];
-  }
+    if (timestamp !== null) {
+      query = "UPDATE PLACES SET VISITED = ? WHERE ID = ?";
+      params = [timestamp, placeId];
+    } else {
+      query = "UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?";
+      params = [placeId];
+    }
 
-  try {
-    await runQuery(query, params);
-    console.log('Place marked as visited.');
-  } catch (error) {
-    console.error('Errore in setPlaceVisited:', error);
-    throw error;
-  }
+    db.run(query, params, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 /**
- *
- * @param {number} placeId - The ID of the place to be deleted.
+ * 
+ * @param {number} placeId - The ID of the place to be deleted. 
  * @returns {Promise<void>} - A promise that resolves when the place is successfully deleted.
  * @throws {Error} Thrown if there are errors during the database operations.
  */
 
-async function deletePlace(placeId) {
-  const deletePlacesQuery = 'DELETE FROM PLACES WHERE ID = ?';
-  const deleteRatingQuery = 'DELETE FROM RATING WHERE PLACEID = ?';
-
-  try {
-    await runQuery(deletePlacesQuery, [placeId]);
-    await runQuery(deleteRatingQuery, [placeId]);
-
-    console.log('Place deleted successfully.');
-  } catch (error) {
-    console.error('Error in deletePlace:', error);
-    throw error;
-  }
+function deletePlace(placeId) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run("DELETE FROM PLACES WHERE ID = ?", [placeId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+      db.run("DELETE FROM RATING WHERE PLACEID = ?", [placeId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    })
+  });
 }
 
 const dao = {
@@ -262,6 +235,6 @@ const dao = {
   getPlaceInfo,
   getPlaceComments,
   setPlaceVisited,
-  deletePlace,
+  deletePlace
 };
 export default dao;
