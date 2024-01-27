@@ -1,5 +1,5 @@
 import mysql from "mysql2";
-import "dotenv/config";
+import 'dotenv/config'
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -138,12 +138,12 @@ async function insertRating(placeId, userId, rating, comment) {
  *
  */
 async function getPlaceComments(placeId) {
-  const query = "SELECT * FROM RATING WHERE PLACEID = ?";
+  const query = 'SELECT * FROM RATING WHERE PLACEID = ?';
   try {
     const rows = await runQuery(query, [placeId]);
     return rows;
   } catch (error) {
-    console.error("Error in getPlaceComments:", error);
+    console.error('Error in getPlaceComments:', error);
     throw error;
   }
 }
@@ -158,19 +158,19 @@ async function getPlaceComments(placeId) {
  * @throws {Error} Thrown if there are errors during the database query.
  */
 async function getPlaces(chatId, type = null, visited = null) {
-  let query = "SELECT * FROM PLACES WHERE CHATID = ?";
+  let query = 'SELECT * FROM PLACES WHERE CHATID = ?';
   const params = [chatId];
 
   if (type !== null) {
-    query += " AND TYPE = ?";
+    query += ' AND TYPE = ?';
     params.push(type);
   }
 
   if (visited !== null) {
     if (visited) {
-      query += " AND VISITED IS NOT NULL";
+      query += ' AND VISITED IS NOT NULL';
     } else {
-      query += " AND VISITED IS NULL";
+      query += ' AND VISITED IS NULL';
     }
   }
 
@@ -178,7 +178,7 @@ async function getPlaces(chatId, type = null, visited = null) {
     const rows = await runQuery(query, params);
     return rows;
   } catch (error) {
-    console.error("Error in getPlaces:", error);
+    console.error('Error in getPlaces:', error);
     throw error;
   }
 }
@@ -192,13 +192,13 @@ async function getPlaces(chatId, type = null, visited = null) {
  */
 
 async function getPlaceInfo(placeId) {
-  const query = "SELECT * FROM PLACES WHERE ID = ?";
+  const query = 'SELECT * FROM PLACES WHERE ID = ?';
 
   try {
     const row = await runQuery(query, [placeId]);
-    return row[0];
+    return row[0]; 
   } catch (error) {
-    console.error("Error in getPlaceInfo:", error);
+    console.error('Error in getPlaceInfo:', error);
     throw error;
   }
 }
@@ -215,25 +215,20 @@ async function getPlaceInfo(placeId) {
 async function setPlaceVisited(placeId, timestamp = null) {
   let query;
   let params;
-  function addZero(value) {
-    return value < 10 ? `0${value}` : value;
-  }
-  let [day, month, year] = timestamp.split("/");
-  formattedTimestamp = `${year}-${addZero(month)}-${addZero(day)}`;
 
-  if (formattedTimestamp !== null) {
-    query = "UPDATE PLACES SET VISITED = ? WHERE ID = ?";
-    params = [formattedTimestamp, placeId];
+  if (timestamp !== null) {
+    query = 'UPDATE PLACES SET VISITED = ? WHERE ID = ?';
+    params = [timestamp, placeId];
   } else {
-    query = "UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?";
+    query = 'UPDATE PLACES SET VISITED = CURRENT_TIMESTAMP WHERE ID = ?';
     params = [placeId];
   }
 
   try {
     await runQuery(query, params);
-    console.log("Place marked as visited.");
+    console.log('Place marked as visited.');
   } catch (error) {
-    console.error("Errore in setPlaceVisited:", error);
+    console.error('Errore in setPlaceVisited:', error);
     throw error;
   }
 }
@@ -246,16 +241,16 @@ async function setPlaceVisited(placeId, timestamp = null) {
  */
 
 async function deletePlace(placeId) {
-  const deletePlacesQuery = "DELETE FROM PLACES WHERE ID = ?";
-  const deleteRatingQuery = "DELETE FROM RATING WHERE PLACEID = ?";
+  const deletePlacesQuery = 'DELETE FROM PLACES WHERE ID = ?';
+  const deleteRatingQuery = 'DELETE FROM RATING WHERE PLACEID = ?';
 
   try {
     await runQuery(deletePlacesQuery, [placeId]);
     await runQuery(deleteRatingQuery, [placeId]);
 
-    console.log("Place deleted successfully.");
+    console.log('Place deleted successfully.');
   } catch (error) {
-    console.error("Error in deletePlace:", error);
+    console.error('Error in deletePlace:', error);
     throw error;
   }
 }

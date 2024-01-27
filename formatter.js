@@ -1,5 +1,4 @@
 function formatVisitedPlace(place) {
-	
 	let res = "- "
 	if (place.URL) res += `<a href="${place.URL}">${place.NAME} ✅</a>\n`
 	else res += `${place.NAME} ✅\n`
