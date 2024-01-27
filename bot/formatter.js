@@ -5,7 +5,7 @@ function formatVisitedPlace(place) {
 	if (place.URL) res += `<a href="${place.URL}">${place.NAME} ✅</a>\n`
 	else res += `${place.NAME} ✅\n`
 	if (place.RATING) res += `   ⭐️ <i>${place.RATING.toFixed(1)}</i>\n`
-	if (place.VISITED) res += `   🗓 <i>${dayjs(timestamp).format('DD/MM/YYYY')}</i>\n`
+	if (place.VISITED) res += `   🗓 <i>${dayjs(place.VISITED).format('DD/MM/YYYY')}</i>\n`
 	res += `\n`
 	return res
 }
