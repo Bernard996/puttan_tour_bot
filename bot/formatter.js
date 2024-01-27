@@ -1,5 +1,4 @@
-const dayjs = require('dayjs');
-
+import dayjs from 'dayjs'
 function formatVisitedPlace(place) {
 	
 	let res = "- "
