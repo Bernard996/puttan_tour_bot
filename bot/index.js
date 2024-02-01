@@ -382,7 +382,8 @@ function main() {
 		changeStatus(ctx.from.id, "selectUrl")
 		await ctx.reply(`@${ctx.from.username} Inserisci l'URL del posto`, {
 			reply_markup: {
-				force_reply: true
+				force_reply: true,
+				selective: true
 			}
 		})
 	})
