@@ -1,20 +1,33 @@
 import mysql from "mysql2";
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: "db",
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
   port: 3306,
+  waitForConnections: true,
+  connectionLimit: 100, 
+  queueLimit: 0, 
 });
 
-// Connettiti al server MySQL
+// Gestisci gli errori di connessione
+db.on('error', (err) => {
+  console.error('Database error:', err);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.log('Attempting to reconnect to the database...');
+    db.connect();
+  } else {
+    throw err;
+  }
+});
+
 db.connect((err) => {
   if (err) {
     console.error("Connection error:", err);
     return;
   }
-  console.log("Connected to MYSQL server");
+  console.log("Connected to MySQL server");
   createTables();
 });
 
