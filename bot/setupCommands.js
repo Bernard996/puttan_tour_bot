@@ -16,7 +16,9 @@ export function setupCommands(bot) {
     list: "list",
     set_visited: "set_visited",
     rate: "rate",
-    comments: "comments"
+    comments: "comments",
+    get_random_eat: "get_random_eat",
+    get_random_visit: "get_random_visit",
   };
 
   const cmdDesc = {
@@ -26,7 +28,9 @@ export function setupCommands(bot) {
     list: "Body count",
     set_visited: "Qui ho già una clientela",
     rate: "Quanto sono stata brava?",
-    comments: "Direttamente da BitchAdvisor"
+    comments: "Direttamente da BitchAdvisor",
+    get_random_eat: "Ne ho troppi...",
+    get_random_visit: "Ne ho troppi..."
   };
 
   //start
@@ -49,9 +53,11 @@ export function setupCommands(bot) {
         `/${cmd.faq}: mostra questo messaggio\n` +
         `/${cmd.insert}: inserisci un nuovo posto\n` +
         `/${cmd.list}: elenca tutti i posti\n` +
-        `/${cmd.set_visited}: aggiorna un posto come visitato\n`
-        `/${cmd.rate}: inserisci un voto e un commento opzionale a un posto che hai visitato\n`
-        `/${cmd.comments}: visualizza i commenti di un posto\n`, {reply_markup: {selective: true}}
+        `/${cmd.set_visited}: aggiorna un posto come visitato\n` +
+        `/${cmd.rate}: inserisci un voto e un commento opzionale a un posto che hai visitato\n` +
+        `/${cmd.get_random_eat}: estrai un posto casuale in cui andare a mangiare\n` +
+        `/${cmd.get_random_visit}: estrai un posto casuale da andare a visitare\n` +
+        `/${cmd.comments}: visualizza i commenti di un posto\n`
     );
   });
 
@@ -163,10 +169,34 @@ export function setupCommands(bot) {
     }
   })
 
+  //get random place to eat
+  bot.command(cmd.get_random_eat, async (ctx) => {
+    await get_random_place("mangiare", ctx)
+  })
+
+  //get random place to visit
+  bot.command(cmd.get_random_visit, async (ctx) => {
+    await get_random_place("visitare", ctx)
+  })
+
   //menu creation
   bot.api.setMyCommands(
     Object.entries(cmd).map(([key, value]) => {
       return { command: value, description: cmdDesc[key] };
     })
   );
+
+
+  async function get_random_place(type, ctx) {
+    let places = await dao.getPlaces(ctx.chat.id.toString(), type, false)
+    if (places && places.length > 0) {
+      let randomPlace = places[Math.floor(Math.random() * places.length)]
+      await ctx.reply(`Stasera si batte da... 🥁\n\n<a href="${randomPlace.URL}">${randomPlace.NAME}</a>`, {
+        parse_mode: "HTML",
+      })
+    } else {
+      await ctx.reply(`@${ctx.from.username} Non ci sono posti visitati!`)
+      changeStatus(ctx.from.id, "start")
+    }
+  }
 }

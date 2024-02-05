@@ -8,15 +8,16 @@ const db = mysql.createConnection({
   port: 3306,
 });
 
-// Connettiti al server MySQL
 db.connect((err) => {
   if (err) {
     console.error("Connection error:", err);
     return;
   }
-  console.log("Connected to MYSQL server");
+  console.log("Connected to MySQL server");
   createTables();
+  setInterval(() => {runQuery("SELECT 1+1 AS result")}, 1000000); // Keep the connection alive
 });
+
 
 // Function to run queries
 async function runQuery(query, params = []) {
