@@ -5,3 +5,4 @@ db/db.sqlite
 
 .env
 db/db.sqlite
+docker-compose.yml
