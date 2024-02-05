@@ -1,25 +1,11 @@
 import mysql from "mysql2";
 
-const db = mysql.createPool({
+const db = mysql.createConnection({
   host: "db",
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
   port: 3306,
-  waitForConnections: true,
-  connectionLimit: 100, 
-  queueLimit: 0, 
-});
-
-// Gestisci gli errori di connessione
-db.on('error', (err) => {
-  console.error('Database error:', err);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.log('Attempting to reconnect to the database...');
-    db.connect();
-  } else {
-    throw err;
-  }
 });
 
 db.connect((err) => {
@@ -29,7 +15,9 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL server");
   createTables();
+  setInterval(() => {runQuery("SELECT 1+1 AS result").then((res) => {console.log("Hihihi", res)})}, 1000);
 });
+
 
 // Function to run queries
 async function runQuery(query, params = []) {
