@@ -15,7 +15,7 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL server");
   createTables();
-  setInterval(() => {runQuery("SELECT 1+1 AS result").then((res) => {console.log("Hihihi", res)})}, 1000);
+  setInterval(() => {runQuery("SELECT 1+1 AS result")}, 1000000); // Keep the connection alive
 });
 
 
