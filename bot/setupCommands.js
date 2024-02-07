@@ -4,7 +4,7 @@ import {
   initStatus,
   initNewPlace
 } from "./index.js";
-import { Keyboard } from "grammy";
+import {InlineKeyboard, Keyboard} from "grammy";
 import { formattedList } from "./formatter.js";
 import dao from "./db/dao.mjs";
 
@@ -37,10 +37,18 @@ export function setupCommands(bot) {
   bot.command(cmd.start, async (ctx) => {
     let userId = ctx.from.id;
     initStatus(userId, "start");
+
+    let k = new Keyboard();
+    k.add(Keyboard.webApp("Vai all'app", "https://109.234.58.39/"));
+    k.resize_keyboard = true;
+
     await ctx.reply(
       `@${ctx.from.username} Ciao Zoccola!\nQuesto è il nostro bot per gestire i posti dove andare a battere insieme!\n\nEh? Ancora non hai capito come funziona il bot? 😅 Che puttana...\n\nLancia il comando /faq per vedere i dettagli sul listino prezzi!`,
       {
-        reply_markup: { remove_keyboard: true, selective: true },
+        reply_markup: {
+          ...k,
+          remove_keyboard: true, selective: true
+        },
       }
     );
     changeStatus(ctx.from.id, "start");
