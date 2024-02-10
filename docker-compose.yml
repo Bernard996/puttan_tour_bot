@@ -4,6 +4,7 @@ services:
     image: yobasystems/alpine-mariadb # for raspberry only
     # image: mysql # for dev
     environment:
+      TZ: "Europe/Rome"
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
@@ -21,6 +22,7 @@ services:
   bot:
     image: node:latest
     environment:
+      TZ: "Europe/Rome"
       TOKEN: ${TOKEN}
       TEST_TOKEN: ${TEST_TOKEN}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
