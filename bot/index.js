@@ -28,6 +28,7 @@ export const btnMsgs = ["Posto dove mangiare", "Posto da visitare"];
 let monthNumbers = {}
 let usersNewPlace = {}
 let usersPlaceToEdit = {}
+let usersPlaceToDelete = {}
 let userListParams = {}
 let userYear = {}
 
@@ -42,7 +43,8 @@ function main() {
 		let username = ctx.from.username
 		let userId = ctx.from.id
 		const message = ctx.message.text;
-
+		
+		
 		if (usersStatus[userId] === undefined) {
 			initStatus(userId, 'start')
 		}
@@ -54,6 +56,8 @@ function main() {
 			});
 		}
 		*/
+
+
 		//handle insert status, showing the keyboard
 		else if (usersStatus[userId]["insert"]) {
 			//error message with wrong strings
@@ -82,6 +86,102 @@ function main() {
 					});
 					changeStatus(userId, "selectVisit");
 				}
+			}
+		}
+
+		else if (usersStatus[userId]["selectDeleteType"]) {
+			if (message !== btnMsgs[0] && message !== btnMsgs[1]) {
+				await ctx.reply(
+					`@${username} hai sbagliato! Devi scegliere la tipologia di posto da eliminare!`
+				);
+			}
+			//right case, handling type choice
+			else {
+				let places = await dao.getPlaces(ctx.chat.id.toString(), message.split(" ")[2].trim(), null)
+				let kb = new Keyboard()
+				kb.row("↩️ Annulla")
+				places.forEach((p, i) => {
+					if(!i%2){
+						kb.row()
+					}
+					kb.text(p.NAME)
+				})
+				kb.resize_keyboard = true
+				kb.selective = true
+				if (message === btnMsgs[0]) {
+					await ctx.reply(`@${username} inserisci il nome del posto dove mangiare da rimuovere`, {
+						reply_markup: {
+							...kb,
+							selective: true,
+							force_reply: true
+						},
+					});
+					changeStatus(userId, "selectDelete");
+				} 
+				else if (message === btnMsgs[1]) {
+					await ctx.reply(`@${username} inserisci il nome del posto da visitare da rimuovere`, {
+						reply_markup: {
+							...kb,
+							selective: true,
+							force_reply: true
+						}
+					});
+					changeStatus(userId, "selectDelete");
+				}
+			}
+		}
+
+		else if (usersStatus[userId]["selectDelete"]) {
+			let places = await dao.getPlaces(ctx.chat.id.toString(), null, null)
+			let placesNames = places.map((place) => place.NAME)
+			await ctx.reply(`${message}`)
+			if (!placesNames.includes(message)) {
+				await ctx.reply(`@${username} Il posto ${message} non esiste!`, {
+					reply_markup: {
+						remove_keyboard: true,
+						selective: true
+					}
+				})
+				changeStatus(userId, "start")
+			}
+			else {
+				let kb = new Keyboard()
+				kb.add("↩️ Annulla")
+				kb.add("Conferma ✅")
+				kb.resize_keyboard = true
+				await ctx.reply(`@${username} Sei sicuro di voler eliminare il posto "${message}"?`, {
+					reply_markup: {
+						...kb,
+						selective: true,
+						force_reply: true
+					}
+				})
+				usersPlaceToDelete[userId] = message
+				changeStatus(userId, "deleteConfirm")
+			}
+
+		}
+
+		else if (usersStatus[userId]["deleteConfirm"]) {
+			if(message === "↩️ Annulla"){
+				await ctx.reply(`@${username} Operazione annullata`, {
+					reply_markup: {
+						remove_keyboard: true,
+						selective: true
+					}
+				})
+				changeStatus(userId, "start")
+			}
+			else if(message === "Conferma ✅"){
+				await dao.deletePlace(ctx.chat.id.toString(), usersPlaceToDelete[userId])
+				delete usersPlaceToDelete[userId]
+				await ctx.reply(`Posto cancellato correttamente!\n\n\n@${username}`, {
+					reply_markup: {
+						remove_keyboard: true,
+						selective: true
+					}
+				})
+				changeStatus(userId, "start")
 			}
 		}
 
@@ -412,7 +512,6 @@ function main() {
 	bot.start();
 
 	bot.catch((err) => {
-		console.log("Ooops", err);
 	})
 }
 
@@ -446,8 +545,12 @@ export function initStatus(id, status) {
 	usersStatus[id.toString()] = {
 		start: false,
 		insert: false,
+		delete: false,
+		deleteConfirm: false,
 		selectFood: false,
 		selectVisit: false,
+		selectDeleteType: false,
+		selectDelete: false,
 		selectDate: false,
 		selectMonth: false,
 		selectYear: false,

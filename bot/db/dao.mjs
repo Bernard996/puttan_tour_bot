@@ -15,9 +15,10 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL server");
   createTables();
-  setInterval(() => {runQuery("SELECT 1+1 AS result")}, 1000000); // Keep the connection alive
+  setInterval(() => {
+    runQuery("SELECT 1+1 AS result");
+  }, 1000000); // Keep the connection alive
 });
-
 
 // Function to run queries
 async function runQuery(query, params = []) {
@@ -58,7 +59,7 @@ async function createTables() {
         RATING FLOAT NOT NULL,
         COMMENT TEXT,
         PRIMARY KEY (PLACEID, USERID),
-        FOREIGN KEY (PLACEID) REFERENCES PLACES(ID)
+        FOREIGN KEY (PLACEID) REFERENCES PLACES(ID) ON DELETE CASCADE
       )
     `);
 
@@ -215,7 +216,7 @@ async function getPlaceInfo(placeId) {
 async function setPlaceVisited(placeId, timestamp = null) {
   let query;
   let params;
-  
+
   if (timestamp !== null) {
     query = "UPDATE PLACES SET VISITED = ? WHERE ID = ?";
     params = [timestamp, placeId];
@@ -235,21 +236,31 @@ async function setPlaceVisited(placeId, timestamp = null) {
 
 /**
  *
- * @param {number} placeId - The ID of the place to be deleted.
+ * @param {number} placeName - The name of the place to be deleted.
+ * @param {number} chatID - ID of the chat.
  * @returns {Promise<void>} - A promise that resolves when the place is successfully deleted.
  * @throws {Error} Thrown if there are errors during the database operations.
  */
 
-async function deletePlace(placeId) {
-  const deletePlacesQuery = "DELETE FROM PLACES WHERE ID = ?";
-  const deleteRatingQuery = "DELETE FROM RATING WHERE PLACEID = ?";
-
+async function deletePlace(chatID, placeName) {
+  const getPlaceId = "SELECT ID FROM PLACES WHERE CHATID = ? AND NAME = ?";
+  const deletePlacesQuery = "DELETE FROM PLACES WHERE CHATID = ? AND NAME=?";
+  const deleteRatingsQuery = "DELETE FROM RATING WHERE PLACEID = ?";
+  
   try {
-    await runQuery(deletePlacesQuery, [placeId]);
-    await runQuery(deleteRatingQuery, [placeId]);
 
+    // Ottieni l'ID del luogo
+    const placeIdResult = await runQuery(getPlaceId, [chatID, placeName]);
+    const placeId = placeIdResult.length > 0 ? placeIdResult[0].ID : null;
+
+    // Se l'ID del luogo è valido, elimina i voti e poi il luogo stesso
+    if (placeId) {
+      await runQuery(deleteRatingsQuery, [placeId]);
+      await runQuery(deletePlacesQuery, [chatID, placeName]);
+    }    
     console.log("Place deleted successfully.");
   } catch (error) {
+    // In caso di errore, esegui il rollback della transazione
     console.error("Error in deletePlace:", error);
     throw error;
   }

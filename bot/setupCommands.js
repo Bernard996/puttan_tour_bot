@@ -13,6 +13,7 @@ export function setupCommands(bot) {
     start: "start",
     faq: "faq",
     insert: "insert",
+    delete: "delete",
     list: "list",
     set_visited: "set_visited",
     rate: "rate",
@@ -25,6 +26,7 @@ export function setupCommands(bot) {
     start: "Dammi una botta... di vita",
     faq: "Faq-ami tutta",
     insert: "Oh sì, mettilo dentro",
+    delete: "Mi avete rotto il cazzo",
     list: "Body count",
     set_visited: "Qui ho già una clientela",
     rate: "Quanto sono stata brava?",
@@ -52,6 +54,7 @@ export function setupCommands(bot) {
       `/${cmd.start}: avvia il bot\n` +
         `/${cmd.faq}: mostra questo messaggio\n` +
         `/${cmd.insert}: inserisci un nuovo posto\n` +
+        `/${cmd.delete}: rimuovi un posto\n` +
         `/${cmd.list}: elenca tutti i posti\n` +
         `/${cmd.set_visited}: aggiorna un posto come visitato\n` +
         `/${cmd.rate}: inserisci un voto e un commento opzionale a un posto che hai visitato\n` +
@@ -77,6 +80,23 @@ export function setupCommands(bot) {
       }
     );
     changeStatus(ctx.from.id, cmd.insert);
+  });
+ 
+  //delete
+  bot.command(cmd.delete, async (ctx) => {
+    initStatus(ctx.from.id, "selectDeleteType");
+    let username = ctx.from.username;
+    const keyboard = new Keyboard();
+    keyboard.add(btnMsgs[0], btnMsgs[1]);
+    keyboard.resize_keyboard = true;
+    keyboard.selective = true;
+    await ctx.reply(
+      `Sei sempre la solita troia @${username}... Di cosa ci siamo stufate oggi?`,
+      {
+        reply_markup: { ...keyboard, force_reply: true},
+      }
+    );
+    changeStatus(ctx.from.id, "selectDeleteType");
   });
 
   //list
