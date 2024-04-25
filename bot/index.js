@@ -101,10 +101,7 @@ function main() {
 				let kb = new Keyboard()
 				kb.row("↩️ Annulla")
 				places.forEach((p, i) => {
-					if(!i%2){
-						kb.row()
-					}
-					kb.text(p.NAME)
+					kb.row(p.NAME)
 				})
 				kb.resize_keyboard = true
 				kb.selective = true
@@ -134,7 +131,6 @@ function main() {
 		else if (usersStatus[userId]["selectDelete"]) {
 			let places = await dao.getPlaces(ctx.chat.id.toString(), null, null)
 			let placesNames = places.map((place) => place.NAME)
-			await ctx.reply(`${message}`)
 			if (!placesNames.includes(message)) {
 				await ctx.reply(`@${username} Il posto ${message} non esiste!`, {
 					reply_markup: {
